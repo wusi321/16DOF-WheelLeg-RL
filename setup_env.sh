@@ -39,6 +39,7 @@ fi
 
 OK_N=0; WARN_N=0; FAIL_N=0
 PY_USABLE=1   # .venv 是否可在当前平台使用（由 check_python_env 设置）
+UV_READY=0    # uv 是否可用（由 ensure_uv 设置，缺失时自动安装）
 
 section() { printf '\n%s\n' "${C_DIM}── $* ──${C_RST}"; }
 ok()      { OK_N=$((OK_N + 1));   printf '  %s %s\n' "${C_OK}[ OK ]${C_RST}" "$*"; }
@@ -48,6 +49,113 @@ note()    { printf '  %s %s\n' "${C_DIM}[ -- ]${C_RST}" "$*"; }
 die()     { printf '%s\n' "${C_FAIL}$*${C_RST}" >&2; exit 1; }
 
 have() { command -v "$1" >/dev/null 2>&1; }
+
+# ---------------------------------------------------------------- uv 检测/安装
+# uv 是整条链路的入口（uv sync / uv run / uv lock）。没有就自动装：
+#   Windows(Git Bash) → 官方 install.ps1 → winget
+#   Linux / WSL       → 官方 install.sh（curl 或 wget）
+#   兜底              → python -m pip install --user uv
+uv_bin_dirs() {
+  printf '%s\n' \
+    "$HOME/.local/bin" \
+    "${USERPROFILE:+$USERPROFILE/.local/bin}" \
+    "$HOME/.cargo/bin" \
+    "${LOCALAPPDATA:+$LOCALAPPDATA/uv}" \
+    "/usr/local/bin"
+}
+
+# 在常见安装目录里找 uv，找到就临时加进 PATH
+_uv_try_paths() {
+  local d
+  while IFS= read -r d; do
+    [ -n "$d" ] || continue
+    [ -d "$d" ] || continue
+    if [ -x "$d/uv" ] || [ -x "$d/uv.exe" ]; then
+      export PATH="$d:$PATH"
+      hash -r 2>/dev/null || true
+      if have uv; then
+        UV_READY=1
+        note "uv 不在 PATH 中，已从 $d 载入（仅本次会话）"
+        return 0
+      fi
+    fi
+  done <<EOF
+$(uv_bin_dirs)
+EOF
+  return 1
+}
+
+install_uv() {
+  local log
+  log="$(mktemp 2>/dev/null || echo /tmp/uv-install.log)"
+  section "安装 uv"
+
+  if [ "$DRY_RUN" = 1 ]; then
+    note "--dry-run：跳过 uv 安装（正常运行时这里会自动安装）"
+    return 1
+  fi
+
+  if [ "$IS_MSYS" = 1 ] && have powershell.exe; then
+    note "使用官方 PowerShell 安装脚本 ..."
+    if powershell.exe -NoProfile -ExecutionPolicy Bypass \
+        -Command 'irm https://astral.sh/uv/install.ps1 | iex' >"$log" 2>&1; then
+      return 0
+    fi
+    note "PowerShell 安装失败，尝试 winget ..."
+    if have winget && winget install --id astral-sh.uv -e --source winget \
+        --accept-source-agreements --accept-package-agreements >"$log" 2>&1; then
+      return 0
+    fi
+  fi
+
+  if have curl; then
+    note "使用官方 shell 安装脚本 ..."
+    if curl -LsSf https://astral.sh/uv/install.sh | sh >"$log" 2>&1; then
+      return 0
+    fi
+  elif have wget; then
+    note "使用官方 shell 安装脚本（wget） ..."
+    if wget -qO- https://astral.sh/uv/install.sh | sh >"$log" 2>&1; then
+      return 0
+    fi
+  fi
+
+  if have python3 && python3 -m pip --version >/dev/null 2>&1; then
+    note "回退到 pip 安装 ..."
+    if python3 -m pip install --user --upgrade uv >"$log" 2>&1; then
+      return 0
+    fi
+  fi
+
+  printf '  %s安装日志（最后 10 行）:%s\n' "$C_DIM" "$C_RST"
+  tail -10 "$log" 2>/dev/null | sed 's/^/        /'
+  return 1
+}
+
+ensure_uv() {
+  UV_READY=0
+  if have uv; then
+    UV_READY=1
+    return 0
+  fi
+  _uv_try_paths && return 0
+
+  if ! install_uv; then
+    warn "自动安装 uv 失败；手动安装见 https://docs.astral.sh/uv/getting-started/installation/"
+    return 1
+  fi
+
+  hash -r 2>/dev/null || true
+  if _uv_try_paths || have uv; then
+    UV_READY=1
+    ok "uv 安装完成: $(uv --version 2>/dev/null)"
+    note "如果新开终端找不到 uv，把这行加到 ~/.bashrc（Windows 则把 ~/.local/bin 加进用户 PATH）:"
+    note '  export PATH="$HOME/.local/bin:$PATH"'
+    return 0
+  fi
+  warn "uv 已安装但当前 shell 还找不到，请重开终端后再运行本脚本"
+  return 1
+}
 
 # ---------------------------------------------------------------- 参数解析
 MODE="all"          # all | mirror | check | list | restore
@@ -61,17 +169,21 @@ usage() {
   cat <<'EOF'
 用法: bash setup_env.sh [选项]
 
-  (无参数)      测速选最快镜像 → 写入项目 → 环境检查
+  (无参数)      缺 uv 时自动安装 → 测速选最快镜像 → 写入项目 → 环境检查
   --mirror      只测速换源
-  --check       只做环境检查
+  --check       只做环境检查（同样会自动补装 uv）
   --install     换源 + 检查 + uv sync
   --deep        额外跑 go2w 契约校验 + 场景冒烟
   --pip         同时写 pip 源
   --list        列出候选镜像与当前源
   --restore     恢复默认源（清华 TUNA）
-  --dry-run     只测速，不写任何文件
+  --dry-run     只测速，不写文件、不安装 uv
   --yes, -y     不询问，全部自动确认
   -h, --help    显示本帮助
+
+说明: 检测到没有 uv 时会自动安装（Windows: PowerShell 脚本 → winget；
+      Linux/WSL: 官方 install.sh；兜底 python -m pip install --user uv），
+      装好后继续后面的配置流程。
 EOF
 }
 
@@ -359,7 +471,11 @@ check_basics() {
   have git  && ok "git: $(git --version 2>/dev/null)" || bad "缺少 git"
   have curl && ok "curl: $(curl --version 2>/dev/null | head -1 | awk '{print $2}')" || warn "缺少 curl（测速/网络检查会跳过）"
   have awk  && ok "awk: $(awk --version 2>/dev/null | head -1 || echo 可用)" || bad "缺少 awk"
-  have uv   && ok "uv: $(uv --version 2>/dev/null)" || bad "缺少 uv —— 安装: curl -LsSf https://astral.sh/uv/install.sh | sh"
+  if [ "$UV_READY" = 1 ]; then
+    ok "uv: $(uv --version 2>/dev/null)"
+  else
+    bad "uv 不可用（自动安装失败）—— 手动: curl -LsSf https://astral.sh/uv/install.sh | sh"
+  fi
 
   if [ "$PLATFORM" = "windows-gitbash" ]; then
     if printf '%s' "$PROJECT_ROOT" | LC_ALL=C grep -q '[^ -~]'; then
@@ -639,6 +755,12 @@ printf '%s\n' "平台: $PLATFORM"
 
 case "$MODE" in
   list)    list_mirrors; exit 0 ;;
+esac
+
+# uv 是后面所有步骤的前提：没有就自动装，装好后继续
+ensure_uv || true
+
+case "$MODE" in
   restore) restore_index_url; exit $? ;;
   mirror)  run_mirror || true ;;
   check)   : ;;

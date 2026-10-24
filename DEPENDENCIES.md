@@ -52,6 +52,7 @@ mjlab = { path = "mjlab", editable = true }
 ## 基本入口
 
 ```bash
+bash setup_env.sh --install    # 自动补装 uv → 测速换源 → 环境检查 → uv sync
 uv sync
 uv run train Robot-Flat-v0
 uv run train Robot-Rough-v0
@@ -61,3 +62,8 @@ uv run play  Robot-Rough-v0
 # 不依赖 GPU 的模型/名称一致性检查
 uv run --no-project --with mujoco python tools/check_go2w_contract.py
 ```
+
+> `setup_env.sh` 检测不到 `uv` 时会自动安装：Windows(Git Bash) 用官方
+> `install.ps1`（失败再试 `winget install astral-sh.uv`）；Linux/WSL 用官方
+> `install.sh`（curl 或 wget）；都不可用时回退 `python -m pip install --user uv`。
+> 装完会重新扫描 `~/.local/bin` 等目录并继续执行，不需要重开终端。

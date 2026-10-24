@@ -70,8 +70,12 @@ bash setup_env.sh --check     # 只做环境检查
 `setup_env.sh` 会并行测速 7 个常用镜像（清华 / 阿里 / 中科大 / 腾讯 / 华为 /
 南大 / 官方），把最快的写进 `pyproject.toml` 的默认 `[[tool.uv.index]]`，
 不会动 `pytorch-cu128`、`nvidia` 两个显式源，也不会让 `uv.lock` 失效。
+**如果机器上没有 uv，脚本会自动安装**（Windows 走官方 PowerShell 脚本 →
+winget；Linux/WSL 走官方 `install.sh`；兜底 `python -m pip install --user uv`），
+装好之后继续后面的换源/检查/安装流程。
 其它选项：`--deep`（再跑模型契约 + 场景冒烟）、`--pip`（顺带写 pip 源）、
-`--restore`（恢复清华源）、`--dry-run`、`--list`、`--help`。
+`--restore`（恢复清华源）、`--dry-run`（只测速，不写文件也不装 uv）、
+`--list`、`--help`。
 
 装好之后：
 
