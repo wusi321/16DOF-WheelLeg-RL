@@ -44,6 +44,14 @@ mjlab / MuJoCo-Warp / RSL-RL），机器人模型替换为 `go2w/go2w.xml`。
 - Python 3.10 – 3.13，[uv](https://docs.astral.sh/uv/)
 - **NVIDIA GPU**（mjlab 通过 MuJoCo-Warp 在 GPU 上并行 2048 个环境）
 - 见 `DEPENDENCIES.md`：MuJoCo 3.8、`mjlab[cu128]`、PyTorch CUDA 12.8
+- Linux 无显示器环境：mjlab 默认 `MUJOCO_GL=egl`，而 `import mujoco` 会立刻加载
+  EGL 后端。缺库时报
+  `AttributeError: 'NoneType' object has no attribute 'eglQueryString'`，装一下系统库：
+
+  ```bash
+  sudo apt-get install -y --no-install-recommends libegl1 libgl1 libosmesa6
+  # 或者改用软件渲染：export MUJOCO_GL=osmesa
+  ```
 
 ## 安装与训练
 

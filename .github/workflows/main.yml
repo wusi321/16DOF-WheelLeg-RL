@@ -85,6 +85,15 @@ jobs:
           enable-cache: true
           python-version: ${{ env.PYTHON_VERSION }}
 
+      # mjlab 在 Linux 上会 `os.environ.setdefault("MUJOCO_GL", "egl")`，而
+      # `import mujoco` 会立刻导入 EGL 渲染后端。托管 runner 默认没有 libEGL，
+      # PyOpenGL 会抛 AttributeError: 'NoneType' object has no attribute
+      # 'eglQueryString'，导致整个 import 失败。装上系统库即可。
+      - name: 安装 headless OpenGL 运行库
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libegl1 libgl1 libosmesa6
+
       - name: 安装依赖
         run: uv sync --frozen
 
