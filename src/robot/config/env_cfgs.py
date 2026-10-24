@@ -128,6 +128,28 @@ from ..mdp.commands import UniformThresholdVelocityCommandCfg
 WHEEL_NAMES = naming.LEG_ORDER
 
 
+def _simulation_cfg(ccd_iterations: int = 0) -> SimulationCfg:
+    """统一的仿真配置。
+
+    ``nconmax`` / ``njmax`` 是 mujoco-warp 每个 world 的接触/约束配额。go2w 打开了
+    自碰撞，轮子又用网格碰撞体，平地落地一次就可能到 ``nefc≈97``；warp 的默认
+    启发式（平地约 64）会不停打印
+    ``nefc overflow - please increase njmax to 70/79/97`` 并截断接触，既影响物理
+    也把日志刷爆。这里统一给到 128 / 256，四个任务都够用。
+    """
+    return SimulationCfg(
+        contact_sensor_maxmatch=128,
+        nconmax=128,
+        njmax=256,
+        mujoco=MujocoCfg(
+            timestep=0.005,
+            impratio=100,
+            cone="elliptic",
+            ccd_iterations=ccd_iterations,
+        ),
+    )
+
+
 def _make_base_env_cfg() -> ManagerBasedRlEnvCfg:
     """Create the base environment configuration containing sensors, commands, and default policies."""
     
@@ -372,7 +394,7 @@ def _make_base_env_cfg() -> ManagerBasedRlEnvCfg:
         commands=commands, actions=actions, observations=observations,
         rewards=rewards, terminations=terminations, events=events,
         metrics=metrics, curriculum=curriculum, decimation=4, episode_length_s=20.0,
-        sim=SimulationCfg(mujoco=MujocoCfg(timestep=0.005, impratio=100, cone="elliptic")),
+        sim=_simulation_cfg(),
         viewer=ViewerConfig(body_name="base_link", distance=3.0, elevation=-20.0, azimuth=45.0),
     )
 
@@ -638,7 +660,7 @@ def rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         cfg.rewards.pop(key, None)
 
     cfg.episode_length_s = 20.0
-    cfg.sim = SimulationCfg(contact_sensor_maxmatch=128, mujoco=MujocoCfg(timestep=0.005, impratio=100, cone="elliptic", ccd_iterations=80))
+    cfg.sim = _simulation_cfg(ccd_iterations=80)
 
     # 移除 orientation 终止，允许机器人翻倒以学习回复
     cfg.seed = 42
@@ -845,7 +867,7 @@ def crawl_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         cfg.rewards.pop(key, None)
 
     cfg.episode_length_s = 30.0
-    cfg.sim = SimulationCfg(contact_sensor_maxmatch=128, mujoco=MujocoCfg(timestep=0.005, impratio=100, cone="elliptic", ccd_iterations=80))
+    cfg.sim = _simulation_cfg(ccd_iterations=80)
 
     # Loosen orientation bad threshold to 80 degrees for steep crawling tilts
     cfg.terminations["bad_orientation"].params["limit_angle"] = math.radians(80.0)
@@ -1068,14 +1090,7 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     cfg.episode_length_s = 20.0
     cfg.decimation = 4
     cfg.seed = 42
-    # 桩体+坑壁接触点比平地多，放宽 warp 的 per-world 约束配额，避免
-    # “nefc overflow - please increase njmax” 截断接触。
-    cfg.sim = SimulationCfg(
-        contact_sensor_maxmatch=128,
-        nconmax=128,
-        njmax=256,
-        mujoco=MujocoCfg(timestep=0.005, impratio=100, cone="elliptic", ccd_iterations=80),
-    )
+    cfg.sim = _simulation_cfg(ccd_iterations=80)
 
     if play:
         cfg.episode_length_s = int(1e9)
