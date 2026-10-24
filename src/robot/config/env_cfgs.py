@@ -128,7 +128,7 @@ from ..mdp.commands import UniformThresholdVelocityCommandCfg
 WHEEL_NAMES = naming.LEG_ORDER
 
 
-def _simulation_cfg(ccd_iterations: int = 0) -> SimulationCfg:
+def _simulation_cfg(ccd_iterations: int = 50) -> SimulationCfg:
     """统一的仿真配置。
 
     ``nconmax`` / ``njmax`` 是 mujoco-warp 每个 world 的接触/约束配额。go2w 打开了
@@ -136,6 +136,11 @@ def _simulation_cfg(ccd_iterations: int = 0) -> SimulationCfg:
     启发式（平地约 64）会不停打印
     ``nefc overflow - please increase njmax to 70/79/97`` 并截断接触，既影响物理
     也把日志刷爆。这里统一给到 128 / 256，四个任务都够用。
+
+    ``ccd_iterations`` 不能为 0：MuJoCo 3.8 的网格碰撞（go2w 的轮子是 mesh）在
+    ``opt.ccd_iterations == 0`` 时**不会产生任何轮-地接触**，机器人会直接穿地掉下去
+    （表现为每个 episode 只有十几步就 base_ground_contact 终止）。默认取 MuJoCo
+    的 50；需要更强 CCD 的任务再传 80。
     """
     return SimulationCfg(
         contact_sensor_maxmatch=128,
