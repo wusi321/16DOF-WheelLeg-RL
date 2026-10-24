@@ -155,8 +155,10 @@ FL_hip, FL_thigh, FL_calf, FL_wheel, FR_hip, ..., RR_calf, RR_wheel
 - **HIM 训练路径不可用**：`src/robot/rsl_rl/` 依赖外部包 `him_mjlab`
   （`HimManagerBasedRlEnv`），源工程归档里没有该包，`uv.lock` 里也没有。
   当前真正可跑的是 mjlab 自带的 PPO + 非对称 Actor-Critic（`rl_cfg.py`）。
-- **地图尚未接入**：`Robocon2027.xml` 只是放在工程根目录，未参与训练。
-  接入时大概率有两种做法（等确定用法后再实现）：
+- **地图尚未接入**：`Robocon2027.xml` 里的 **stepping_stones（梅花桩）段** 已经
+  参数化接进训练（见 `docs/STEPSTONE.md` 与下面的第 8 节），其余段（高墙、低杆、
+  楼梯、轮胎阵等）仍只是地图文件，没有参与训练。
+  要接入固定赛道时大概率有两种做法：
   1. 作为一个 `TerrainEntityCfg` 的固定地形（把 XML 展开成 spec 后与机器人
      场景合并，适合 `terrain_type="plane"/"custom"` 的固定赛道）；
   2. 用它替换 `SceneCfg.terrain` 的来源，或在 `MjSpec` 层面 include，
@@ -165,3 +167,26 @@ FL_hip, FL_thigh, FL_calf, FL_wheel, FR_hip, ..., RR_calf, RR_wheel
   （`feet_ground_contact`、`base_ground_contact`、`body_collision`）会失配。
 - **`go2w/scene.xml`、`go2w/scene_terrain.xml`** 是官方场景，未参与训练；
   训练时的平地/地形由 mjlab 的 `TerrainGeneratorCfg` 程序化生成。
+
+## 8. 梅花桩任务（新增内容，不属于移植）
+
+按 `16DOF_RL.md` 的训练规划与 `Robocon2027.xml` 实场参数新增，**不影响** Flat /
+Rough / Crawl 三个已有任务的任何参数：
+
+| 文件 | 作用 |
+| --- | --- |
+| `src/robot/terrains/stepping_stones.py` | 两条交错桩列地形，桩高/中心距/错位/噪声/缺桩随难度变化 |
+| `src/robot/mdp/stepstone.py` | 前进进度、轮滑、机身高度带、到达终点、跌落、地形课程 |
+| `src/robot/config/env_cfgs.py::stepstone_env_cfg` | 新任务的观测/指令/奖励/终止/课程 |
+| `src/robot/__init__.py` | 注册 `Robot-StepStone-v0` |
+| `docs/STEPSTONE.md` | 地形/课程/奖励/终止的完整说明与讨论稿对照 |
+
+要点：
+
+- 实场桩 0.20 × 0.20 × 0.20 m、两列横向间距 0.40 m（≈轮距）、同列中心距 0.60 m、
+  错位 0.30 m；训练地形以这些值为难度 1.0，从“桩高 0.06 m / 中心距 0.30 m”逐步升上来。
+- 桩区默认 0.6 m 深坑，掉坑 = 失败，防止策略从地面绕过。
+- Actor 观测从 53 维扩到 **326** 维（+273 维局部高度扫描），其余任务不变。
+- 地形课程按“是否通过整段地形”升降级；速度指令按跟踪率自适应放宽。
+- 尚未实现：真实 LiDAR 噪声/丢点/遮挡、几何可达性检查、逐 episode 地形种子日志
+  （对应讨论稿第 2.4、4.4 节，属于后续感知阶段）。

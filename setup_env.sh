@@ -578,7 +578,7 @@ PY
     return
   fi
   local t
-  for t in Robot-Flat-v0 Robot-Rough-v0 Robot-Crawl-v0; do
+  for t in Robot-Flat-v0 Robot-Rough-v0 Robot-Crawl-v0 Robot-StepStone-v0; do
     case " $tasks " in
       *" $t "*) ok "已注册 $t" ;;
       *)        bad "未注册 $t" ;;
@@ -606,10 +606,10 @@ check_deep() {
   out="$(cd "$PROJECT_ROOT" && uv run --no-sync python tools/smoke_build_env.py 2>&1)" || true
   local n
   n="$(printf '%s' "$out" | grep -c "steps ok")"
-  if [ "$n" -ge 3 ]; then
-    ok "三个任务都能 build/reset/step（$n 个任务）"
+  if [ "$n" -ge 4 ]; then
+    ok "四个任务都能 build/reset/step（$n 个任务）"
   else
-    bad "场景冒烟未全部通过（通过 $n/3），详见: uv run python tools/smoke_build_env.py"
+    bad "场景冒烟未全部通过（通过 $n/4），详见: uv run python tools/smoke_build_env.py"
     printf '%s\n' "$out" | grep -E 'Error|Traceback|Exception' | head -5 | sed 's/^/        /'
   fi
 }

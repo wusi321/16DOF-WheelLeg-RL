@@ -18,22 +18,26 @@ mjlab / MuJoCo-Warp / RSL-RL），机器人模型替换为 `go2w/go2w.xml`。
 │  ├─ scene.xml              #   官方平地场景
 │  ├─ scene_terrain.xml      #   官方高程图场景
 │  └─ assets/                #   网格
-├─ Robocon2027.xml           # 比赛地图（待接入）
+├─ Robocon2027.xml           # 比赛地图（stepping_stones 段已接入训练，见 docs/STEPSTONE.md）
 ├─ src/robot/                # ★ 移植的强化学习算法
-│  ├─ __init__.py            #   任务注册（Robot-Flat/Rough/Crawl-v0）
+│  ├─ __init__.py            #   任务注册（Flat / Rough / Crawl / StepStone）
 │  ├─ naming.py              # ★ go2w 名称/位姿/几何常量（唯一来源）
 │  ├─ robot_cfg.py           # ★ go2w 装配：执行器、初始位姿、控制增益
 │  ├─ config/env_cfgs.py     #   观测/动作/奖励/终止/域随机化/地形
 │  ├─ config/rl_cfg.py       #   PPO 超参（原样）
 │  ├─ mdp/                   #   自定义奖励、课程、指令、低通动作、扰动
-│  ├─ terrains/              #   RC 高墙 / 低杆等比赛地形
+│  │  └─ stepstone.py        #   梅花桩专用：进度、轮滑、成功/跌落、课程
+│  ├─ terrains/              #   RC 高墙 / 低杆 / 梅花桩地形
+│  │  └─ stepping_stones.py  #   交错桩列（桩高/中心距/错位/缺桩随难度）
 │  └─ rsl_rl/                #   HIM 代码（本工程中不可用，见下文）
 ├─ mjlab/                    # 固定版本的 mjlab 框架（本地可编辑依赖，含 2 处补丁）
 ├─ tools/
 │  ├─ check_go2w_contract.py # 离线校验：名称模式 / 关节限位 / 站立高度（只要 mujoco）
-│  ├─ smoke_build_env.py     # 三个任务 build+reset+step（CPU 可跑）
+│  ├─ smoke_build_env.py     # 四个任务 build+reset+step（CPU 可跑）
 │  └─ smoke_train_ppo.py     # 1 次 PPO 迭代（CPU 可跑，验证训练链路）
-├─ docs/PORTING.md           # 移植说明：映射表、实测数值、与源工程的差异
+├─ docs/
+│  ├─ PORTING.md             # 移植说明：映射表、实测数值、与源工程的差异
+│  └─ STEPSTONE.md           # 梅花桩任务：地形/课程/奖励/终止的完整说明
 ├─ setup_env.sh              # 一键测速换源 + 环境检查（Linux / WSL / Git Bash）
 ├─ pyproject.toml
 └─ uv.lock                   # 源工程的依赖锁定
@@ -75,6 +79,7 @@ bash setup_env.sh --check     # 只做环境检查
 uv run train Robot-Flat-v0
 uv run train Robot-Rough-v0
 uv run train Robot-Crawl-v0
+uv run train Robot-StepStone-v0
 uv run play  Robot-Rough-v0
 ```
 
@@ -83,6 +88,21 @@ uv run play  Robot-Rough-v0
 | `Robot-Flat-v0` | 平地基础运动 | 20 s |
 | `Robot-Rough-v0` | 台阶、随机网格、高墙、坡面、Perlin | 20 s |
 | `Robot-Crawl-v0` | 低杆 / 低姿态匍匐 | 30 s |
+| `Robot-StepStone-v0` | 梅花桩（`Robocon2027.xml` 的 stepping_stones 段） | 20 s |
+
+### 梅花桩任务（Robot-StepStone-v0）
+
+按 `16DOF_RL.md` 的规划实现，完整说明见 [docs/STEPSTONE.md](docs/STEPSTONE.md)：
+
+- **地形**：两条交错桩列（0.20 × 0.20 m 方桩、横向中心距 0.40 m ≈ 轮距），
+  桩高 0.06 → 0.20 m、前后中心距 0.30 → 0.60 m、错位 0 → 0.30 m、位置噪声
+  0 → ±0.03 m、缺桩 0 → 10%，最终与实场一致；桩区默认是 0.6 m 深坑，掉下去即失败。
+- **课程**：10 档难度对应讨论里的 5 个阶段，通过整段地形升级、走不到 25% 降级；
+  速度指令随跟踪率自适应上调（0.3–0.5 → 最高 0.8 m/s）。
+- **奖励**：实际前进进度（不用轮速）+ 速度/偏航跟踪 + 姿态/高度约束 + 轮滑 +
+  力矩/功率/动作变化率 + 机身碰撞惩罚 + 到达终点 `+60`，摔落/撞地 `-50`。
+- **观测**：actor 326 维 = 53 维本体状态 + 273 维局部高度扫描（21 × 13，1.6 × 1.0 m）。
+- **终止**：超时、倾角 > 60°、机身触地、机身过低、到达终点（成功）、NaN。
 
 ## 控制与观测契约
 
@@ -96,8 +116,8 @@ uv run play  Robot-Rough-v0
 | 默认站姿 | hip `0`、thigh `0.9`、calf `-1.8`、机身高度 `0.36 m` |
 | 动作缩放 | 外展 `0.125 rad`、其余腿关节 `0.25 rad`、轮速 `5.0 rad/s` |
 | 动作维度 | 16：[12 个腿关节位置] + [4 个轮速] |
-| Actor 观测 | 53：角速度 3 + 投影重力 3 + 指令 3 + 腿位置 12 + 腿速度 12 + 轮速 4 + 上一步动作 16 |
-| Critic 观测 | 额外：机身线速度 3 + 轮地接触 4 + 高度扫描 |
+| Actor 观测 | Flat/Rough/Crawl：53（角速度 3 + 投影重力 3 + 指令 3 + 腿位置 12 + 腿速度 12 + 轮速 4 + 上一步动作 16）<br>StepStone：**326** = 53 + 高度扫描 273（21 × 13，1.6 × 1.0 m，0.08 m 分辨率） |
+| Critic 观测 | 额外：机身线速度 3 + 轮地接触 4 + 高度扫描 273（StepStone 的 actor 也已包含高度扫描） |
 | 关节顺序 | `FL, FR, RL, RR` × `(hip, thigh, calf, wheel)` |
 
 ## 校验移植是否与模型一致
@@ -108,7 +128,7 @@ uv run play  Robot-Rough-v0
 # 1) 名称/位姿/几何与 go2w 模型的一致性（只需要 mujoco）
 uv run --no-project --with mujoco python tools/check_go2w_contract.py
 
-# 2) 三个任务能否 build / reset / step（CPU 后端，首次会编译 mujoco-warp 内核，较慢）
+# 2) 四个任务能否 build / reset / step（CPU 后端，首次会编译 mujoco-warp 内核，较慢）
 uv run python tools/smoke_build_env.py
 
 # 3) 完整训练链路：1 次 PPO 迭代，日志写到 logs/smoke_ppo
@@ -134,7 +154,7 @@ uv run train Robot-Rough-v0 --agent.logger wandb
 | --- | --- | --- |
 | 静态检查 | push / PR | `compileall`、工作流 YAML 解析、`shellcheck` |
 | go2w 模型契约 | push / PR | `uv lock --check` + 名称/限位/落地高度校验（只要 mujoco） |
-| 训练链路冒烟（CPU） | push 到 main / 手动 | `uv sync` + 三任务 build/step + 一次 PPO 迭代 |
+| 训练链路冒烟（CPU） | push 到 main / 手动 | `uv sync` + 四任务 build/step + 一次 PPO 迭代 |
 
 托管 runner 没有 GPU，冒烟用的是 mujoco-warp 的 CPU 后端，只验证“装得上、跑得通”，
 不做真正的长时间训练。

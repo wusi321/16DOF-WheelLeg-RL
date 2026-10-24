@@ -9,7 +9,14 @@ import torch
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.tasks.registry import load_env_cfg
 
-for task_id in ("Robot-Flat-v0", "Robot-Rough-v0", "Robot-Crawl-v0"):
+TASKS = (
+    "Robot-Flat-v0",
+    "Robot-Rough-v0",
+    "Robot-Crawl-v0",
+    "Robot-StepStone-v0",
+)
+
+for task_id in TASKS:
     cfg = load_env_cfg(task_id)
     cfg.scene.num_envs = 2
     cfg.scene.terrain.num_envs = 2

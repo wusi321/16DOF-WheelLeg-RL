@@ -59,3 +59,14 @@ def crawl_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
     cfg.experiment_name = "robot_crawl"
     return cfg
 
+
+def stepstone_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+    """梅花桩任务：沿用比赛架构的 PPO 超参，只换实验名。
+
+    观测从 53 维扩到 326 维（多了 273 维高度扫描），网络结构不变。
+    """
+    cfg = rough_ppo_runner_cfg()
+    cfg.experiment_name = "robot_stepstone"
+    cfg.max_iterations = 20_000
+    return cfg
+

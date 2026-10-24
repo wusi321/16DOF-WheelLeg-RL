@@ -41,7 +41,7 @@ from mjlab.terrains import (
     HfPerlinNoiseTerrainCfg,
     HfPyramidSlopedTerrainCfg,
 )
-from ..terrains import RCWallTerrainCfg, RCLowBarTerrainCfg
+from ..terrains import RCWallTerrainCfg, RCLowBarTerrainCfg, BoxSteppingStonesTerrainCfg
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
 from mjlab.viewer import ViewerConfig
 
@@ -50,6 +50,15 @@ from ..robot_cfg import get_robot_cfg, get_robot_crawl_cfg, LEG_POS_SCALE, WHEEL
 from ..mdp.lowpass_actions import JointPositionDelayedLowPassActionCfg, JointVelocityDelayedLowPassActionCfg
 from ..mdp.disturbances import apply_continuous_disturbance
 from ..mdp.only_positive_rewards import enable_only_positive_rewards
+from ..mdp.stepstone import (
+    base_too_low,
+    body_height_band,
+    forward_progress,
+    goal_reached_bonus,
+    reached_goal,
+    stepstone_levels,
+    wheel_slip,
+)
 from ..mdp.rewards import (
     track_linear_velocity,
     track_linear_velocity_l1,
@@ -854,5 +863,229 @@ def crawl_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
             cfg.scene.terrain.terrain_generator.num_cols = 5
             cfg.scene.terrain.terrain_generator.num_rows = 5
             cfg.scene.terrain.terrain_generator.border_width = 10.0
+
+    return cfg
+
+
+# ===========================================================================
+# 梅花桩任务（Robocon2027 的 stepping_stones 段）
+# ===========================================================================
+#: 单个地形 patch 的尺寸 (x 通行方向, y 横向) 与起终点平台长度
+STEPSTONE_TERRAIN_SIZE = (4.0, 1.6)
+STEPSTONE_START_LENGTH = 0.8
+STEPSTONE_END_LENGTH = 0.8
+#: 出生点在起点平台中心 (x = 0.4)，终点平台从 x = 3.2 开始
+STEPSTONE_GOAL_DISTANCE = STEPSTONE_TERRAIN_SIZE[0] - STEPSTONE_END_LENGTH - STEPSTONE_START_LENGTH / 2
+#: 课程行数：row i 的难度 = i / (num_rows - 1)
+STEPSTONE_NUM_LEVELS = 10
+
+
+def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+    """梅花桩通行任务：滚动 + 抬腿跨越，按 16DOF_RL.md 的课程/奖励/终止配置。
+
+    - 地形：两条交错桩列（0.20 x 0.20 m 方桩），桩高/中心距/错位/噪声/缺桩
+      随难度从“低矮密集”升到实场的 0.20 m / 0.60 m / 0.30 m 错位。
+    - 观测：53 维本体状态 + 273 维局部高度扫描（21 x 13，1.6 x 1.0 m），
+      对应讨论里的“局部高度图”，暂不接真实 LiDAR 噪声。
+    - 成功：机身沿 +x 走过 STEPSTONE_GOAL_DISTANCE 进入终点平台。
+    - 课程：通过整段地形升一级，几乎原地不动降一级；同时自适应抬高速度指令。
+    """
+    cfg = _make_base_env_cfg()
+    cfg.scene.entities = {"robot": get_robot_cfg()}
+
+    # ------------------------------------------------------------------ 地形
+    cfg.scene.terrain = TerrainEntityCfg(
+        terrain_type="generator",
+        terrain_generator=TerrainGeneratorCfg(
+            size=STEPSTONE_TERRAIN_SIZE,
+            border_width=2.0,
+            num_rows=STEPSTONE_NUM_LEVELS,
+            num_cols=1,
+            curriculum=True,
+            difficulty_range=(0.0, 1.0),
+            sub_terrains={
+                "stepstones": BoxSteppingStonesTerrainCfg(
+                    proportion=1.0,
+                    size=STEPSTONE_TERRAIN_SIZE,
+                    start_length=STEPSTONE_START_LENGTH,
+                    end_length=STEPSTONE_END_LENGTH,
+                ),
+            },
+        ),
+        max_init_terrain_level=0,
+    )
+    cfg.scene.terrain.num_envs = 2048
+    cfg.scene.terrain.env_spacing = 2.5
+
+    # ------------------------------------------------------------- 观测补充
+    # 讨论里的“局部高度图”：把 critic 的高度扫描同时喂给 actor。
+    # 网格 1.6 x 1.0 m / 0.08 m -> 21 x 13 = 273 维；actor 观测 53 -> 326。
+    cfg.observations["actor"].terms["height_scan"] = ObservationTermCfg(
+        func=safe_height_scan,
+        params={"sensor_name": "height_scanner"},
+        clip=(-1.0, 1.0),
+    )
+
+    # ------------------------------------------------------------------ 指令
+    twist = cfg.commands["twist"]
+    twist.heading_command = False
+    twist.rel_heading_envs = 0.0
+    twist.ranges.heading = None
+    twist.rel_standing_envs = 0.05
+    twist.rel_forward_envs = 0.70
+    twist.rel_lateral_envs = 0.10
+    twist.rel_yaw_envs = 0.15
+    twist.ranges.lin_vel_x = (0.3, 0.8)
+    twist.ranges.lin_vel_y = (-0.2, 0.2)
+    twist.ranges.ang_vel_z = (-0.4, 0.4)
+    twist.resampling_time_range = (6.0, 6.0)
+
+    # ------------------------------------------------------------ 重置与扰动
+    cfg.events["reset_base"] = EventTermCfg(
+        func=envs_mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "pose_range": {
+                "x": (-0.05, 0.05),
+                "y": (-0.05, 0.05),
+                "z": (naming.STAND_BASE_HEIGHT, naming.STAND_BASE_HEIGHT),
+                "yaw": (-0.15, 0.15),
+            },
+            "velocity_range": {"x": (-0.1, 0.1), "y": (-0.05, 0.05), "z": (0.0, 0.0)},
+            "asset_cfg": SceneEntityCfg("robot"),
+        },
+    )
+    cfg.events["push_robot"] = EventTermCfg(
+        func=envs_mdp.push_by_setting_velocity,
+        mode="interval",
+        interval_range_s=(6.0, 10.0),
+        params={"velocity_range": {"x": (-0.2, 0.2), "y": (-0.2, 0.2)}, "asset_cfg": SceneEntityCfg("robot")},
+    )
+
+    # ------------------------------------------------------------------ 奖励
+    cfg.rewards = {
+        # 主信号：目标方向的实际进度（用机身位移，不用轮速）
+        "forward_progress": RewardTermCfg(
+            func=forward_progress,
+            weight=1.5,
+            params={"command_name": "twist", "target_speed": 0.8},
+        ),
+        "track_lin_vel_x": RewardTermCfg(
+            func=track_linear_velocity_x,
+            weight=0.8,
+            params={"std": 0.25, "command_name": "twist"},
+        ),
+        "track_ang_vel_z": RewardTermCfg(
+            func=track_angular_velocity_z,
+            weight=0.4,
+            params={"std": 0.4, "command_name": "twist"},
+        ),
+        # 姿态与高度：不要求完全水平，只惩罚异常俯仰/横滚和趴地
+        "flat_orientation": RewardTermCfg(func=flat_orientation_l2, weight=-0.5),
+        "body_height": RewardTermCfg(
+            func=body_height_band,
+            weight=-1.0,
+            params={"min_height": 0.18, "max_height": 0.75},
+        ),
+        # 轮子空转 / 滑移：只在接触时统计
+        "wheel_slip": RewardTermCfg(
+            func=wheel_slip,
+            weight=-0.05,
+            params={"sensor_name": "feet_ground_contact", "wheel_radius": naming.WHEEL_RADIUS},
+        ),
+        # 能耗与平滑
+        "joint_torques": RewardTermCfg(func=envs_mdp.joint_torques_l2, weight=-2.5e-5),
+        "joint_power": RewardTermCfg(func=joint_power, weight=-2.0e-5),
+        "action_rate": RewardTermCfg(func=envs_mdp.action_rate_l2, weight=-0.01),
+        "joint_pos_limits": RewardTermCfg(func=envs_mdp.joint_pos_limits, weight=-5.0),
+        # 机身撞桩（腿/轮与桩顶的接触不罚）
+        "undesired_contacts": RewardTermCfg(
+            func=undesired_contacts,
+            weight=-0.5,
+            params={"sensor_name": "body_collision", "threshold": 1.0},
+        ),
+        # 成功一次 +60；失败终止 -50（净 +10），避免成功被终止惩罚抵消
+        "goal_reached": RewardTermCfg(
+            func=goal_reached_bonus,
+            weight=60.0,
+            params={"distance": STEPSTONE_GOAL_DISTANCE},
+        ),
+        "is_terminated": RewardTermCfg(func=envs_mdp.is_terminated, weight=-50.0),
+    }
+
+    # ---------------------------------------------------------------- 终止
+    cfg.terminations = {
+        "time_out": TerminationTermCfg(func=envs_mdp.time_out, time_out=True),
+        "bad_orientation": TerminationTermCfg(
+            func=envs_mdp.bad_orientation, params={"limit_angle": math.radians(60.0)}
+        ),
+        "base_ground_contact": TerminationTermCfg(
+            func=velocity_mdp.illegal_contact, params={"sensor_name": "base_ground_contact"}
+        ),
+        "base_too_low": TerminationTermCfg(func=base_too_low, params={"min_height": 0.12}),
+        # 到达终点平台：成功终止（不是 time-out，值函数不做 bootstrap）
+        "goal_reached": TerminationTermCfg(
+            func=reached_goal, params={"distance": STEPSTONE_GOAL_DISTANCE}
+        ),
+        "nan_detection": TerminationTermCfg(func=envs_mdp.nan_detection),
+    }
+
+    # ---------------------------------------------------------------- 课程
+    cfg.curriculum = {
+        "terrain_levels": CurriculumTermCfg(
+            func=stepstone_levels,
+            params={"goal_distance": STEPSTONE_GOAL_DISTANCE, "min_progress_frac": 0.25},
+        ),
+        "command_x_levels": CurriculumTermCfg(
+            func=command_levels_adaptive,
+            params={
+                "command_name": "twist",
+                "reward_term_name": "forward_progress",
+                "axis": "x",
+                "initial_range": (0.3, 0.5),
+                "delta_command": 0.05,
+                "target_ratio": 0.6,
+                "ema_alpha": 0.5,
+            },
+        ),
+    }
+
+    cfg.metrics.update(
+        {
+            "progress": MetricsTermCfg(
+                func=forward_progress, params={"command_name": "twist", "target_speed": 0.8}
+            ),
+            "wheel_slip": MetricsTermCfg(
+                func=wheel_slip,
+                params={"sensor_name": "feet_ground_contact", "wheel_radius": naming.WHEEL_RADIUS},
+            ),
+            "goal_reached": MetricsTermCfg(
+                func=goal_reached_bonus, params={"distance": STEPSTONE_GOAL_DISTANCE}
+            ),
+        }
+    )
+
+    cfg.episode_length_s = 20.0
+    cfg.decimation = 4
+    cfg.seed = 42
+    # 桩体+坑壁接触点比平地多，放宽 warp 的 per-world 约束配额，避免
+    # “nefc overflow - please increase njmax” 截断接触。
+    cfg.sim = SimulationCfg(
+        contact_sensor_maxmatch=128,
+        nconmax=128,
+        njmax=256,
+        mujoco=MujocoCfg(timestep=0.005, impratio=100, cone="elliptic", ccd_iterations=80),
+    )
+
+    if play:
+        cfg.episode_length_s = int(1e9)
+        cfg.observations["actor"].enable_corruption = False
+        cfg.events.pop("push_robot", None)
+        cfg.curriculum = {}
+        if cfg.scene.terrain is not None and cfg.scene.terrain.terrain_generator is not None:
+            cfg.scene.terrain.terrain_generator.curriculum = False
+            cfg.scene.terrain.terrain_generator.num_rows = 5
+            cfg.scene.terrain.terrain_generator.num_cols = 1
+            cfg.scene.terrain.terrain_generator.border_width = 4.0
 
     return cfg
