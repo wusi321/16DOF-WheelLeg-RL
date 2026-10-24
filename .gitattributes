@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Shell scripts must keep LF line endings (Git Bash / WSL 下 CRLF 会直接报错)
+*.sh text eol=lf

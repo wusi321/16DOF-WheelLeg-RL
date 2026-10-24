@@ -32,6 +32,7 @@ mjlab / MuJoCo-Warp / RSL-RL），机器人模型替换为 `go2w/go2w.xml`。
 │  ├─ smoke_build_env.py     # 三个任务 build+reset+step（CPU 可跑）
 │  └─ smoke_train_ppo.py     # 1 次 PPO 迭代（CPU 可跑，验证训练链路）
 ├─ docs/PORTING.md           # 移植说明：映射表、实测数值、与源工程的差异
+├─ setup_env.sh              # 一键测速换源 + 环境检查（Linux / WSL / Git Bash）
 ├─ pyproject.toml
 └─ uv.lock                   # 源工程的依赖锁定
 ```
@@ -44,10 +45,23 @@ mjlab / MuJoCo-Warp / RSL-RL），机器人模型替换为 `go2w/go2w.xml`。
 
 ## 安装与训练
 
-在工程根目录执行：
+在工程根目录执行（Windows 用 Git Bash，Linux/WSL 用系统 bash）：
 
 ```bash
-uv sync                    # 安装依赖（会自动安装本地 mjlab）
+bash setup_env.sh --install   # ① 测速选最快 PyPI 源 + ② 环境检查 + ③ uv sync
+bash setup_env.sh             # 只做 ①+②，不动依赖
+bash setup_env.sh --check     # 只做环境检查
+```
+
+`setup_env.sh` 会并行测速 7 个常用镜像（清华 / 阿里 / 中科大 / 腾讯 / 华为 /
+南大 / 官方），把最快的写进 `pyproject.toml` 的默认 `[[tool.uv.index]]`，
+不会动 `pytorch-cu128`、`nvidia` 两个显式源，也不会让 `uv.lock` 失效。
+其它选项：`--deep`（再跑模型契约 + 场景冒烟）、`--pip`（顺带写 pip 源）、
+`--restore`（恢复清华源）、`--dry-run`、`--list`、`--help`。
+
+装好之后：
+
+```bash
 uv run train Robot-Flat-v0
 uv run train Robot-Rough-v0
 uv run train Robot-Crawl-v0

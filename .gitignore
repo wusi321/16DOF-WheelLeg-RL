@@ -20,3 +20,6 @@ outputs/
 .idea/
 Thumbs.db
 .DS_Store
+
+# setup_env.sh 备份
+pyproject.toml.bak
