@@ -93,7 +93,40 @@ jobs:
           uv run --no-sync python -c "import mujoco, torch, warp, mjlab, robot; print('mujoco', mujoco.__version__); print('torch', torch.__version__); print('warp ok'); print('mjlab/robot ok')"
 
       - name: 三个任务 build / reset / step
-        run: uv run --no-sync python tools/smoke_build_env.py
+        timeout-minutes: 25
+        run: |
+          set -o pipefail
+          uv run --no-sync python tools/smoke_build_env.py 2>&1 | tee smoke.log
 
       - name: 一次 PPO 迭代
-        run: uv run --no-sync python tools/smoke_train_ppo.py
+        timeout-minutes: 15
+        run: |
+          set -o pipefail
+          uv run --no-sync python tools/smoke_train_ppo.py 2>&1 | tee -a smoke.log
+
+      # 失败时把日志尾部写成 annotation（Actions 页和 API 都能看到），
+      # 同时上传完整日志，方便没有仓库权限的人排查
+      - name: 失败日志
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import pathlib
+
+          def esc(s: str) -> str:
+              return s.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+          log = pathlib.Path("smoke.log")
+          if log.exists():
+              tail = log.read_text(errors="replace").splitlines()[-40:]
+              print("::error title=smoke log tail::" + esc("\n".join(tail)))
+          else:
+              print("::error title=smoke::smoke.log 未生成，脚本可能在启动阶段就失败了")
+          PY
+
+      - name: 上传日志
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-log
+          path: smoke.log
+          if-no-files-found: warn
