@@ -1,5 +1,7 @@
 # 16DOF-WheelLeg-RL
 
+[![CI](https://github.com/wusi321/16DOF-WheelLeg-RL/actions/workflows/main.yml/badge.svg)](https://github.com/wusi321/16DOF-WheelLeg-RL/actions/workflows/main.yml)
+
 16 自由度轮足机器人（Unitree **go2w** 模型）的强化学习训练工程。
 
 训练算法移植自 `rc_mjlab` 的 16DOF 轮足任务（PPO + 非对称 Actor-Critic，
@@ -115,6 +117,19 @@ uv run python tools/smoke_train_ppo.py
 ```bash
 uv run train Robot-Rough-v0 --agent.logger wandb
 ```
+
+## CI（GitHub Actions）
+
+`.github/workflows/main.yml` 三个 job：
+
+| Job | 触发 | 内容 |
+| --- | --- | --- |
+| 静态检查 | push / PR | `compileall`、工作流 YAML 解析、`shellcheck` |
+| go2w 模型契约 | push / PR | `uv lock --check` + 名称/限位/落地高度校验（只要 mujoco） |
+| 训练链路冒烟（CPU） | push 到 main / 手动 | `uv sync` + 三任务 build/step + 一次 PPO 迭代 |
+
+托管 runner 没有 GPU，冒烟用的是 mujoco-warp 的 CPU 后端，只验证“装得上、跑得通”，
+不做真正的长时间训练。
 
 ## 说明
 

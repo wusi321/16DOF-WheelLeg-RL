@@ -1,1 +1,99 @@
+# CI：静态检查 + go2w 模型契约 + 训练链路冒烟
+#
+# GitHub 托管 runner 没有 GPU，所以只能跑 mujoco-warp 的 CPU 后端：
+# 「训练链路冒烟」验证的是依赖能装、三个任务能 build/reset/step、PPO 能跑完
+# 一次迭代，不做长时间训练。真正的训练请在带 GPU 的机器上执行。
 
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 快速静态检查：不安装项目依赖
+  # ---------------------------------------------------------------------------
+  static:
+    name: 静态检查
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Python 语法编译
+        run: python -m compileall -q src tools
+
+      - name: 工作流 YAML 可解析
+        run: |
+          python -m pip install --quiet pyyaml
+          python -c "import glob, yaml; files = sorted(glob.glob('.github/workflows/*.yml')); [yaml.safe_load(open(p, encoding='utf-8')) for p in files]; print('workflow yaml ok:', files)"
+
+      - name: ShellCheck setup_env.sh
+        run: shellcheck --severity=error setup_env.sh
+
+  # ---------------------------------------------------------------------------
+  # go2w 模型契约：只需要 mujoco，不需要 torch / GPU
+  # ---------------------------------------------------------------------------
+  contract:
+    name: go2w 模型契约
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: uv.lock 与 pyproject.toml 一致
+        run: uv lock --check
+
+      - name: 名称 / 关节限位 / 落地高度 / geom group
+        run: uv run --no-project --with "mujoco>=3.8,<3.9" python tools/check_go2w_contract.py
+
+  # ---------------------------------------------------------------------------
+  # 训练链路冒烟：安装完整依赖（含 torch cu128，约 3 GB）+ CPU 后端跑一遍
+  # 只在 push 到 main 或手动触发时运行，PR 上跳过以节省时间
+  # ---------------------------------------------------------------------------
+  smoke:
+    name: 训练链路冒烟（CPU）
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: 安装依赖
+        run: uv sync --frozen
+
+      - name: 依赖版本与环境自检
+        run: |
+          uv run --no-sync python -c "import mujoco, torch, warp, mjlab, robot; print('mujoco', mujoco.__version__); print('torch', torch.__version__); print('warp ok'); print('mjlab/robot ok')"
+
+      - name: 三个任务 build / reset / step
+        run: uv run --no-sync python tools/smoke_build_env.py
+
+      - name: 一次 PPO 迭代
+        run: uv run --no-sync python tools/smoke_train_ppo.py
