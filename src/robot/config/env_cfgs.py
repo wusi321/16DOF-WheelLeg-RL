@@ -59,6 +59,12 @@ from ..mdp.stepstone import (
     stepstone_levels,
     wheel_slip,
 )
+from ..mdp.stone_coverage import (
+    all_stones_bonus,
+    pit_contact_penalty,
+    stone_coverage,
+    stone_touch_reward,
+)
 from ..mdp.rewards import (
     track_linear_velocity,
     track_linear_velocity_l1,
@@ -1038,6 +1044,13 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
             params={"distance": STEPSTONE_GOAL_DISTANCE},
         ),
         "is_terminated": RewardTermCfg(func=envs_mdp.is_terminated, weight=-50.0),
+        # 赛事规则：每个桩顶面必须至少被足底（轮子）接触一次。
+        # 每踩上一根新桩 +3；踩满整段 +10；轮子踩到坑底（≥2 个着地）每步 -2。
+        "stone_touch": RewardTermCfg(func=stone_touch_reward, weight=3.0),
+        "all_stones": RewardTermCfg(func=all_stones_bonus, weight=10.0),
+        "pit_contact": RewardTermCfg(
+            func=pit_contact_penalty, weight=-2.0, params={"min_wheels": 2}
+        ),
     }
 
     # ---------------------------------------------------------------- 终止
@@ -1089,6 +1102,7 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
             "goal_reached": MetricsTermCfg(
                 func=goal_reached_bonus, params={"distance": STEPSTONE_GOAL_DISTANCE}
             ),
+            "stone_coverage": MetricsTermCfg(func=stone_coverage),
         }
     )
 

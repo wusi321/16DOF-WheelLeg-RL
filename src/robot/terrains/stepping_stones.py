@@ -1,4 +1,4 @@
-"""梅花桩（stepping-stone）地形，对应 Robocon2027.xml 里的 stepping_stones 段。
+﻿"""梅花桩（stepping-stone）地形，对应 Robocon2027.xml 里的 stepping_stones 段。
 
 实场地形（`Robocon2027.xml`）：
 
@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import mujoco
 import numpy as np
@@ -89,6 +89,10 @@ class BoxSteppingStonesTerrainCfg(SubTerrainCfg):
 
     missing_prob_range: tuple[float, float] = (0.0, 0.10)
     """单桩缺失概率范围，仅用于文档/校验（实际曲线见 _MISSING）。"""
+
+    #: 每次生成递增，用于给桩体 geom 起唯一名字（``stepstone_<n>``）。
+    #: 名字是运行时恢复"哪根桩被踩过"的唯一依据，见 mdp/stone_coverage.py。
+    _stone_counter: int = field(default=0, init=False, repr=False)
 
     # -- 内部工具 -----------------------------------------------------------
     def _params(self, difficulty: float) -> dict[str, float]:
@@ -213,6 +217,8 @@ class BoxSteppingStonesTerrainCfg(SubTerrainCfg):
                     size=(half_x, half_y, half_h),
                     pos=(x, y, bottom + half_h),
                 )
+                stone.name = f"stepstone_{self._stone_counter}"
+                self._stone_counter += 1
                 geometries.append(
                     TerrainGeometry(geom=stone, color=stone_color)
                 )
