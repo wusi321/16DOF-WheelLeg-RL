@@ -172,3 +172,9 @@ uv run train Robot-Rough-v0 --agent.logger wandb
 - `src/robot/rsl_rl/` 中的 HIM 训练代码依赖外部 `him_mjlab` 包，源工程归档里
   没有该包，**当前无法运行**；实际训练路径是 mjlab 自带的 PPO。
   详见 `docs/PORTING.md`。
+
+## 感知接口（Odin1）
+
+真机感知（留形科技 Odin1：点云/IMU/里程计）与仿真高度扫描的统一接口、sim2real 差异建模、
+局部地形观测定义和三阶段落地计划，见 [`docs/perception/`](docs/perception/README.md)。
+该目录目前**只有设计与调查**，未改动训练代码、未新增依赖。
