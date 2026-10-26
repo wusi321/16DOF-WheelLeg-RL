@@ -44,6 +44,10 @@ _HEIGHT_HIGH = np.array([0.05, 0.07, 0.10, 0.15, 0.18, 0.20])
 _PITCH = np.array([0.30, 0.32, 0.35, 0.45, 0.55, 0.60])
 _STAGGER = np.array([0.00, 0.05, 0.10, 0.20, 0.26, 0.30])
 _NOISE = np.array([0.00, 0.00, 0.01, 0.02, 0.025, 0.030])
+#: 平台与首/末排桩之间的净空（边到边）。赛事里平台与方块都是 200 mm、顶面齐平，
+#: 真正要跨越的是这个 gap；它必须显式控制，否则随 pitch 变化会被拉到 20 cm 以上，
+#: 机器人从最后一排桩下来时直接掉进坑（2026-10-26 play 里看到的现象）。
+_GAP = np.array([0.05, 0.06, 0.07, 0.09, 0.12, 0.15])
 _MISSING = np.array([0.00, 0.00, 0.00, 0.05, 0.075, 0.10])
 
 # 外观取自《2027 年足式机器人挑战赛 V1.0》障碍赛「梅花桩」条目：
@@ -95,6 +99,9 @@ class BoxSteppingStonesTerrainCfg(SubTerrainCfg):
     missing_prob_range: tuple[float, float] = (0.0, 0.10)
     """单桩缺失概率范围，仅用于文档/校验（实际曲线见 _MISSING）。"""
 
+    edge_gap_range: tuple[float, float] = (0.05, 0.15)
+    """平台与首/末排桩的净空范围，仅用于文档/校验（实际曲线见 _GAP）。"""
+
     #: 每次生成递增，用于给桩体 geom 起唯一名字（``stepstone_<n>``）。
     #: 名字是运行时恢复"哪根桩被踩过"的唯一依据，见 mdp/stone_coverage.py。
     _stone_counter: int = field(default=0, init=False, repr=False)
@@ -109,6 +116,7 @@ class BoxSteppingStonesTerrainCfg(SubTerrainCfg):
             "stagger": float(np.interp(d, _STAGE_DIFFICULTY, _STAGGER)),
             "noise": float(np.interp(d, _STAGE_DIFFICULTY, _NOISE)),
             "missing": float(np.interp(d, _STAGE_DIFFICULTY, _MISSING)),
+            "gap": float(np.interp(d, _STAGE_DIFFICULTY, _GAP)),
         }
 
     @staticmethod
@@ -152,17 +160,23 @@ class BoxSteppingStonesTerrainCfg(SubTerrainCfg):
             for box in make_plane(body, self.size, 0.0, center_zero=False):
                 geometries.append(TerrainGeometry(geom=box, color=(0.35, 0.35, 0.35, 1.0)))
 
-        # 2) 起点 / 终点平台（顶面 z = 0）
+        # 2) 起点 / 终点平台：顶面与桩顶**同高**。
+        # 赛事里平台和方块都是 200 mm 高、顶面齐平；旧版把平台顶面放在 z=0、桩顶在
+        # 3–20 cm，机器人从最后一排桩下来要“跨 20 cm 空 + 下 20 cm 台阶”，必然掉坑
+        # （2026-10-26 play 里全卡在终点前）。现在平台跟着桩高一起抬起来。
+        h_nom = 0.5 * (p["height_low"] + p["height_high"])
+        plat_half_z = (h_nom + 0.05) / 2.0
+        plat_z = h_nom - plat_half_z  # 顶面恰好 = h_nom
         start = body.add_geom(
             type=mujoco.mjtGeom.mjGEOM_BOX,
-            size=(self.start_length / 2.0, sy / 2.0, 0.05),
-            pos=(self.start_length / 2.0, cy, -0.05),
+            size=(self.start_length / 2.0, sy / 2.0, plat_half_z),
+            pos=(self.start_length / 2.0, cy, plat_z),
         )
         geometries.append(TerrainGeometry(geom=start, color=_PLATFORM_COLOR))
         end = body.add_geom(
             type=mujoco.mjtGeom.mjGEOM_BOX,
-            size=(self.end_length / 2.0, sy / 2.0, 0.05),
-            pos=(sx - self.end_length / 2.0, cy, -0.05),
+            size=(self.end_length / 2.0, sy / 2.0, plat_half_z),
+            pos=(sx - self.end_length / 2.0, cy, plat_z),
         )
         geometries.append(TerrainGeometry(geom=end, color=_PLATFORM_COLOR))
 
@@ -170,24 +184,32 @@ class BoxSteppingStonesTerrainCfg(SubTerrainCfg):
         goal_marker = body.add_geom(
             type=mujoco.mjtGeom.mjGEOM_BOX,
             size=(0.06, sy / 2.0 - 0.05, 0.002),
-            pos=(sx - self.end_length + 0.06, cy, 0.002),
+            pos=(sx - self.end_length + 0.06, cy, h_nom + 0.002),
         )
         goal_marker.contype = 0
         goal_marker.conaffinity = 0
         geometries.append(TerrainGeometry(geom=goal_marker, color=_GOAL_COLOR))
 
-        # 4) 两条桩列
+        # 4) 两条桩列：首/末排固定在离平台 gap 处，中间按 pitch 等分。
+        # 这样“最后一排桩到平台”的净空由 gap 控制（5–15 cm），不会随 pitch 变成 20 cm+。
         pitch = p["pitch"]
         stagger = p["stagger"]
         noise = p["noise"]
         p_missing = p["missing"]
+        gap = p["gap"]
 
-        x_first = self.start_length + pitch / 2.0
-        x_last = sx - self.end_length - pitch / 2.0
-        num_rows = max(1, int(np.floor((x_last - x_first) / pitch)) + 1)
+        x_first = self.start_length + half_x + gap
+        x_last = sx - self.end_length - half_x - gap
+        num_rows = max(1, int(np.floor(max(x_last - x_first, 0.0) / pitch)) + 1)
+        row_x = (
+            np.linspace(x_first, x_last, num_rows)
+            if num_rows > 1
+            else np.array([x_first], dtype=float)
+        )
         lane_offset = self.lane_spacing / 2.0
-        x_margin = half_x + 0.02
         y_margin = half_y + 0.02
+        x_lo = self.start_length + half_x + 0.01
+        x_hi = sx - self.end_length - half_x - 0.01
 
         stone_color = brand_ramp(_STONE_COLOR, 0.25 + 0.55 * float(np.clip(difficulty, 0.0, 1.0)))
 
@@ -201,15 +223,14 @@ class BoxSteppingStonesTerrainCfg(SubTerrainCfg):
                 if drop[lane]:
                     continue
 
-                x = x_first + k * pitch + (stagger if lane == 1 else 0.0)
+                x = float(row_x[k]) + (stagger if lane == 1 else 0.0)
                 y = cy + (lane_offset if lane == 1 else -lane_offset)
                 if noise > 0.0:
                     x += float(rng.uniform(-noise, noise))
                     y += float(rng.uniform(-noise, noise))
 
-                # 边界检查：超界的桩直接丢弃，避免插入平台或 patch 外
-                if x - x_margin < self.start_length or x + x_margin > sx - self.end_length:
-                    continue
+                # 夹在两端平台之间，避免插进平台或 patch 外
+                x = float(np.clip(x, x_lo, x_hi))
                 if y - y_margin < 0.0 or y + y_margin > sy:
                     continue
 
@@ -228,5 +249,7 @@ class BoxSteppingStonesTerrainCfg(SubTerrainCfg):
                     TerrainGeometry(geom=stone, color=stone_color)
                 )
 
-        origin = np.array([self.start_length / 2.0, cy, 0.0])
+        # 出生点抬到平台顶面：reset 的 z 是相对 env_origins 的，否则机器人会在
+        # 平台上方（h_nom）生成、直接掉下来。
+        origin = np.array([self.start_length / 2.0, cy, h_nom])
         return TerrainOutput(origin=origin, geometries=geometries)

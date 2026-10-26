@@ -1,4 +1,4 @@
-"""Robot Environment Configurations for RL Locomotion Training.
+﻿"""Robot Environment Configurations for RL Locomotion Training.
 
 This module defines the Manager-Based RL Environment Configurations for unitree robots
 equipped with actuated wheels and leg joints. It handles sensors, actuators, command
@@ -539,7 +539,7 @@ def rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     cfg.events["reset_base"] = EventTermCfg(
         func=envs_mdp.reset_root_state_uniform, mode="reset",
         params={
-            "pose_range": {"z": (naming.STAND_BASE_HEIGHT, naming.STAND_BASE_HEIGHT), "yaw": (-math.pi, math.pi)},
+            "pose_range": {"z": (0.0, 0.0), "yaw": (-math.pi, math.pi)},  # z 已含在 default_root_state 里，再叠加就会从 0.72 m 掉下来
             "velocity_range": {"x": (-0.2, 0.2), "y": (-0.1, 0.1), "yaw": (-0.2, 0.2)},
             "asset_cfg": SceneEntityCfg("robot"),
         },
@@ -821,7 +821,7 @@ def crawl_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     cfg.events["reset_base"] = EventTermCfg(
         func=envs_mdp.reset_root_state_uniform, mode="reset",
         params={
-            "pose_range": {"z": (naming.CRAWL_BASE_HEIGHT, naming.CRAWL_BASE_HEIGHT + 0.04), "yaw": (-math.pi, math.pi)},
+            "pose_range": {"z": (0.0, 0.04), "yaw": (-math.pi, math.pi)},  # 同上：基准高度已在 default_root_state
             "velocity_range": {"x": (-0.1, 0.1), "y": (-0.05, 0.05), "yaw": (-0.1, 0.1)},
             "asset_cfg": SceneEntityCfg("robot"),
         },
@@ -998,7 +998,7 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
             "pose_range": {
                 "x": (-0.05, 0.05),
                 "y": (-0.05, 0.05),
-                "z": (naming.STAND_BASE_HEIGHT, naming.STAND_BASE_HEIGHT),
+                "z": (0.0, 0.0),  # default_root_state 已是站姿高度，叠加会多掉 0.36 m
                 "yaw": (-0.15, 0.15),
             },
             "velocity_range": {"x": (-0.1, 0.1), "y": (-0.05, 0.05), "z": (0.0, 0.0)},
