@@ -1,4 +1,4 @@
-﻿"""Robot Environment Configurations for RL Locomotion Training.
+"""Robot Environment Configurations for RL Locomotion Training.
 
 This module defines the Manager-Based RL Environment Configurations for unitree robots
 equipped with actuated wheels and leg joints. It handles sensors, actuators, command
@@ -1099,7 +1099,9 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
             func=command_levels_adaptive,
             params={
                 "command_name": "twist",
-                "reward_term_name": "forward_progress",
+                # 用**指令跟踪**项归一化（exp(-err²/std²) ∈ [0,1]）。用 forward_progress
+                # 会把“跑得越快”当成“跟踪越好”，速度课程直接打满（实测 ema=3.03）。
+                "reward_term_name": "track_lin_vel_x",
                 "axis": "x",
                 "initial_range": (0.3, 0.5),
                 "delta_command": 0.05,

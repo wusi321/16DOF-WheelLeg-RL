@@ -67,7 +67,9 @@ def forward_progress(
     dx = x - prev
     state["x"] = x.detach().clone()
     state["buf"] = buf.detach().clone()
-    return dx / (env.step_dt * max(target_speed, 1.0e-6))
+    # 截断到 [-1, 1]：不允许“跑得越快奖励越多”，否则策略会无视速度指令一路狂冲
+    # （2026-10-26 那次 500 迭代：实测速度 ~2.4 m/s、覆盖率只有 0.43）。
+    return torch.clamp(dx / (env.step_dt * max(target_speed, 1.0e-6)), -1.0, 1.0)
 
 
 def body_height_band(
