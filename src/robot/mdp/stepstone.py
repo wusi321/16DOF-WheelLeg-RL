@@ -1,4 +1,4 @@
-﻿"""梅花桩任务专用的奖励 / 终止 / 课程项（对应 16DOF_RL.md 第 3、5、6 节）。
+"""梅花桩任务专用的奖励 / 终止 / 课程项（对应 16DOF_RL.md 第 3、5、6 节）。
 
 设计要点：
 
@@ -36,26 +36,38 @@ def forward_progress(
     target_speed: float = 0.8,
     asset_cfg: SceneEntityCfg | None = None,
 ) -> torch.Tensor:
-    """目标方向上的实际前进速度（归一化到 [0, 1]）。
+    """沿赛道 +x 的**净位移速率**（有符号，归一化到 [-1, 1]）。
 
-    指令接近零时退化为 +x 方向，保证静止起步阶段也有前进信号。
+    为什么不用瞬时速度（无论是世界系还是机体系）：2026-10-26 那次训练里，策略学会了
+    **在 0.8 m 的起点平台上绕圈**——机体系前向速度一直有 0.5 m/s，`track_lin_vel_x`
+    和“机体系前向速度”都会被喂满，但 20 s 下来净位移只有 0.12 m，`stone_coverage`
+    恒为 0。绕圈是速度类奖励的天然漏洞，只有**位移**没法伪造。
+
+    所以这里按步计算 ``Δx / (dt · target_speed)``（有符号）：
+    - 直线前进 → 约 +1；绕圈一圈的净位移 ≈ 0；后退 → 负值（自然形成惩罚）。
+    - 首个 step（reset 后）返回 0，并记录参考位置。
+
+    ``command_name`` 保留是为了兼容现有配置签名，不再参与计算：赛道方向就是 +x。
     """
+    del command_name  # 赛道方向固定为 +x，不再依赖指令
     if asset_cfg is None:
         asset_cfg = SceneEntityCfg("robot")
     asset: Entity = env.scene[asset_cfg.name]
-    cmd = env.command_manager.get_command(command_name)[:, :2]
-    # 指令是机体系（UniformVelocityCommand），所以速度也必须取机体系；
-    # 用世界系速度去点乘机体系指令，在偏航后会把正确跟踪算成 0（mjlab 的速度跟踪
-    # 奖励同样用 root_link_lin_vel_b，保持一致）。
-    v = asset.data.root_link_lin_vel_b[:, :2]
+    x = asset.data.root_link_pos_w[:, 0]
 
-    norm = torch.norm(cmd, dim=1, keepdim=True)
-    fallback = torch.zeros_like(cmd)
-    fallback[:, 0] = 1.0
-    direction = torch.where(norm > 1.0e-3, cmd / torch.clamp(norm, min=1.0e-6), fallback)
+    state = getattr(env, "_stepstone_progress", None)
+    buf = env.episode_length_buf
+    if state is None or state["buf"].shape != buf.shape:
+        state = {"x": x.clone(), "buf": buf.clone()}
+        setattr(env, "_stepstone_progress", state)
+        return torch.zeros_like(x)
 
-    progress = torch.sum(v * direction, dim=1)
-    return torch.clamp(progress, min=0.0) / max(target_speed, 1.0e-6)
+    reset = (buf <= 1) | (buf < state["buf"])
+    prev = torch.where(reset, x, state["x"])
+    dx = x - prev
+    state["x"] = x.detach().clone()
+    state["buf"] = buf.detach().clone()
+    return dx / (env.step_dt * max(target_speed, 1.0e-6))
 
 
 def body_height_band(

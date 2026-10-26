@@ -143,15 +143,65 @@ def _build_state(env: "ManagerBasedRlEnv") -> _StoneCoverageState:
     origins = env.scene.env_origins.detach().cpu().numpy()
     num_envs = origins.shape[0]
 
-    # Assign each stone to the patch whose centre is closest (patches are spaced
-    # 2.5 m apart while being 4.0 m long, so the spawn origins alone are ambiguous).
-    centers_x = origins[:, 0] + center_rel[0]
-    centers_y = origins[:, 1] + center_rel[1]
+    # 按**地形 patch**分组，而不是按 env 出生点就近分配：所有 env 在初始课程下都
+    # 出生在 level 0 的同一个 patch 上（`max_init_terrain_level=0`），按“最近的
+    # env 出生点”分配会把整片地形的桩全塞给 env 0，其余 env 一根桩都没有
+    # （于是 `all_stones` 对它们白送奖励）。正确做法是用 patch 网格索引。
+    terrain = env.scene.terrain
+    patch_origins = getattr(terrain, "terrain_origins", None)
+    levels = getattr(terrain, "terrain_levels", None)
+    types = getattr(terrain, "terrain_types", None)
+
     per_env: list[list[tuple[float, float, float, float, float]]] = [[] for _ in range(num_envs)]
-    for x, y, hx, hy, top in stones_world:
-        d2 = (centers_x - x) ** 2 + (centers_y - y) ** 2
-        best = int(np.argmin(d2))
-        per_env[best].append((x - origins[best, 0], y - origins[best, 1], hx, hy, top - origins[best, 2]))
+
+    if patch_origins is not None and levels is not None and types is not None:
+        grid = np.asarray(patch_origins, dtype=np.float64)  # (num_rows, num_cols, 3)
+        rows, cols = grid.shape[0], grid.shape[1]
+        # Patches sit 4.0 m apart along x and are ~4.0 m long, so grouping by "nearest
+        # patch centre" leaks stones into the neighbouring row (a stone at dx=2.6 is
+        # closer to the next patch's centre). Assign by rectangle containment instead.
+        size_x = float(stone_cfg.size[0]) if stone_cfg is not None else 4.0
+        size_y = float(stone_cfg.size[1]) if stone_cfg is not None else 1.6
+        patch_stones: dict[tuple[int, int], list[tuple[float, float, float, float, float]]] = {}
+        for x, y, hx, hy, top in stones_world:
+            best: tuple[int, int] | None = None
+            best_d = float("inf")
+            for r in range(rows):
+                for c in range(cols):
+                    ox, oy, oz = (float(v) for v in grid[r, c])
+                    dx, dy = x - ox, y - oy
+                    if -0.5 <= dx <= size_x + 0.5 and abs(dy) <= size_y / 2.0 + 0.5:
+                        d = abs(dx - center_rel[0]) + abs(dy)
+                        if d < best_d:
+                            best_d, best = d, (r, c)
+            if best is None:  # 兜底：最近的 patch 中心
+                d2 = (grid[:, :, 0] - x) ** 2 + (grid[:, :, 1] - y) ** 2
+                r, c = np.unravel_index(int(np.argmin(d2)), (rows, cols))
+                best = (int(r), int(c))
+            r, c = best
+            ox, oy, oz = (float(v) for v in grid[r, c])
+            patch_stones.setdefault((r, c), []).append((x - ox, y - oy, hx, hy, top - oz))
+
+        levels_np = levels.detach().cpu().numpy()
+        types_np = types.detach().cpu().numpy()
+        for i in range(num_envs):
+            key = (int(levels_np[i]) % rows, int(types_np[i]) % cols)
+            for dx, dy, hx, hy, dz in patch_stones.get(key, []):
+                per_env[i].append(
+                    (dx + float(grid[key[0], key[1], 0] - origins[i, 0]),
+                     dy + float(grid[key[0], key[1], 1] - origins[i, 1]),
+                     hx, hy,
+                     dz + float(grid[key[0], key[1], 2] - origins[i, 2]))
+                )
+    else:  # 非生成式地形：退回“最近的出生点”启发式
+        centers_x = origins[:, 0] + center_rel[0]
+        centers_y = origins[:, 1] + center_rel[1]
+        for x, y, hx, hy, top in stones_world:
+            d2 = (centers_x - x) ** 2 + (centers_y - y) ** 2
+            best = int(np.argmin(d2))
+            per_env[best].append(
+                (x - origins[best, 0], y - origins[best, 1], hx, hy, top - origins[best, 2])
+            )
 
     max_stones = max(1, max(len(s) for s in per_env))
     stones = torch.zeros((num_envs, max_stones, 5), dtype=torch.float32, device=device)
@@ -247,7 +297,8 @@ def all_stones_bonus(env: "ManagerBasedRlEnv", scale: float = 5.0) -> torch.Tens
     state = _state(env)
     _sync(env, state)
     done = state.visited | ~state.valid
-    all_done = done.all(dim=1)
+    # An env whose patch has no stones must not collect the bonus for free.
+    all_done = done.all(dim=1) & (state.valid.sum(dim=1) > 0)
     just = all_done & ~state.completed
     state.completed = state.completed | just
     return just.to(torch.float32) * scale
