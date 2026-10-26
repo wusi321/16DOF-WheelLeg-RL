@@ -13,17 +13,30 @@ mjlab / MuJoCo-Warp / RSL-RL），机器人模型替换为 `go2w/go2w.xml`。
 
 梅花桩任务（`Robot-StepStone-v0`）的回放视频：
 
-- 🎬 **[assets/videos/stepstone_demo.mp4](assets/videos/stepstone_demo.mp4)**（原始文件名 `创飞梅花桩.mp4`）
+- 🎬 **[assets/videos/2026-10-26_22-26-00/stepstone_demo.mp4](assets/videos/2026-10-26_22-26-00/stepstone_demo.mp4)**（原始文件名 `创飞梅花桩.mp4`，2.8 MB）
 
 > 其余任务的回放可以用 `uv run play <Task> --num-envs 12` 自己录；
 > 梅花桩按难度看：`uv run python tools/play_stepstone_levels.py --checkpoint-file <ckpt>`。
 
-训练曲线截图统一放在 [`assets/images/`](assets/images/) 下（按任务命名，例如
-`flat_reward.png`、`stepstone_coverage.png`），在文档里这样引用：
+## 训练曲线
 
-```markdown
-![stepstone coverage](assets/images/stepstone_coverage.png)
-```
+以 `2026-10-26_22-26-00` 这次 500 迭代的 StepStone 训练为例（wandb 导出，完整截图在
+[`assets/images/2026-10-26_22-26-00/`](assets/images/2026-10-26_22-26-00/)）。
+
+| 曲线 | 读法 |
+| --- | --- |
+| <img src="assets/images/2026-10-26_22-26-00/1.png" width="720"><br>**地形课程** | `level_cap` 每约 50 迭代线性放行一级；`mean/max` 最终到 9；`downgraded` 在 50 迭代后归零，说明不再需要降级 |
+| <img src="assets/images/2026-10-26_22-26-00/2.png" width="720"><br>**速度指令课程** | `distance` 稳定在 2.8（=终点距离）；`x_tracking_ema` 一路涨到 3.0 —— **这是异常值**，说明它测的是"实际速度"而不是"跟踪率"（已在 `bc47895` 修正）；`x_range_max` 因此被打满到 0.8 |
+| <img src="assets/images/2026-10-26_22-26-00/3.png" width="720"><br>**任务指标** | `stone_coverage` 只有 **0.43** —— 近一半的桩没踩到；`wheel_slip` 涨到 1.3（空转严重）；`mean_leg_action_acc` 从 1.8 降到 1.1（动作变平滑） |
+| <img src="assets/images/2026-10-26_22-26-00/4.png" width="720"><br>**奖励项（一）** | `track_lin_vel_x` 在 100 迭代后掉到 ~0 —— 不再跟速度指令；`stone_touch` 稳定在 0.07 左右（被"飞越"稀释） |
+| <img src="assets/images/2026-10-26_22-26-00/5.png" width="720"><br>**奖励项（二）** | `forward_progress` 爬到 0.25 后走平；`goal_reached` 稳定在 0.05（频繁成功）；`is_terminated` 稳定在 −0.01 |
+| <img src="assets/images/2026-10-26_22-26-00/6.png" width="720"><br>**终止原因** | `goal_reached` 终止数一路涨到 ~650/迭代；`time_out` 在 50 迭代后归零；每次升级难度会看到 `base_too_low` / `bad_orientation` 的尖峰（摔下去），随后收敛 |
+| <img src="assets/images/2026-10-26_22-26-00/7.png" width="720"><br>**训练损失** | `Loss/value` 平稳（升级时尖峰是分布变化）；`entropy` 从 22.5 单调降到 11（探索收缩）；`learning_rate` 自适应下降 |
+| <img src="assets/images/2026-10-26_22-26-00/8.png" width="720"><br>**总览** | `mean_reward` 爬到 8.5 后基本走平；`mean_episode_length` 从 300 步压到 **58 步** —— 回合越来越短，正是"高速冲过去"的直接证据 |
+
+> 这组曲线对应的是**修复前**的策略（`c64bb45` 之前的奖励）：课程能一路升到 9 级、成功率很高，
+> 但 `stone_coverage` 只有 0.43、回合长度 58 步。想让策略真正"踩满每根桩"，需要
+> `c64bb45` 之后的奖励（终点按覆盖率打折 + 滞空/超速惩罚）重新训练。
 
 ## 目录结构
 

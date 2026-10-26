@@ -1,4 +1,4 @@
-# Python
+﻿# Python
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -27,3 +27,5 @@ Thumbs.db
 
 # setup_env.sh 备份
 pyproject.toml.bak
+!assets/videos/
+!assets/videos/**/*.mp4
