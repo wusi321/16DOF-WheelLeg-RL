@@ -1,4 +1,4 @@
-"""Robot Environment Configurations for RL Locomotion Training.
+﻿"""Robot Environment Configurations for RL Locomotion Training.
 
 This module defines the Manager-Based RL Environment Configurations for unitree robots
 equipped with actuated wheels and leg joints. It handles sensors, actuators, command
@@ -7,6 +7,7 @@ for flat ground, rough terrains, and crawling tasks.
 """
 
 import math
+import os
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs import mdp as envs_mdp
 from mjlab.envs.mdp import dr as envs_dr
@@ -1138,9 +1139,15 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         cfg.events.pop("push_robot", None)
         cfg.curriculum = {}
         if cfg.scene.terrain is not None and cfg.scene.terrain.terrain_generator is not None:
-            cfg.scene.terrain.terrain_generator.curriculum = False
-            cfg.scene.terrain.terrain_generator.num_rows = 5
-            cfg.scene.terrain.terrain_generator.num_cols = 1
+            # 回放时不再更新等级，但**保留初始等级采样**：env 会均匀分布到 0..N 级，
+            # 这样 120 个环境能同时看到从最简单到赛道规格的全部难度。
+            # 用环境变量 STEPSTONE_PLAY_MAX_LEVEL 控制上限（默认 9 = 最高级）。
+            max_level = int(os.environ.get("STEPSTONE_PLAY_MAX_LEVEL", "9"))
+            cfg.scene.terrain.terrain_generator.curriculum = True
+            cfg.scene.terrain.terrain_generator.num_rows = max(1, max_level + 1)
+            # 每个 env 一个 patch（120 环境 = 10 行 x 12 列），否则同一等级的 env 会叠在同一个出生点。`r`n            cfg.scene.terrain.terrain_generator.num_cols = int(os.environ.get("STEPSTONE_PLAY_COLS", "12"))
             cfg.scene.terrain.terrain_generator.border_width = 4.0
+            cfg.scene.terrain.max_init_terrain_level = max_level
+            cfg.scene.terrain.env_spacing = 4.5  # patch 间隔大于尺寸，避免难度不同的地形互相穿插
 
     return cfg
