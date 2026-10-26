@@ -157,7 +157,12 @@ def _build_state(env: "ManagerBasedRlEnv") -> _StoneCoverageState:
     per_env: list[list[tuple[float, float, float, float, float]]] = [[] for _ in range(num_envs)]
 
     if patch_origins is not None and levels is not None and types is not None:
-        grid = np.asarray(patch_origins, dtype=np.float64)  # (num_rows, num_cols, 3)
+        # ``terrain_origins`` lives on the env device (CUDA when training), so it must be
+        # moved to host before numpy can touch it.
+        patch_origins_host = patch_origins
+        if hasattr(patch_origins_host, "detach"):
+            patch_origins_host = patch_origins_host.detach().cpu().numpy()
+        grid = np.asarray(patch_origins_host, dtype=np.float64)  # (num_rows, num_cols, 3)
         rows, cols = grid.shape[0], grid.shape[1]
         # Patches sit 4.0 m apart along x and are ~4.0 m long, so grouping by "nearest
         # patch centre" leaks stones into the neighbouring row (a stone at dx=2.6 is
