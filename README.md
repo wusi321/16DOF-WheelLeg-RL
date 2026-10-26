@@ -177,4 +177,23 @@ uv run train Robot-Rough-v0 --agent.logger wandb
 
 真机感知（留形科技 Odin1：点云/IMU/里程计）与仿真高度扫描的统一接口、sim2real 差异建模、
 局部地形观测定义和三阶段落地计划，见 [`docs/perception/`](docs/perception/README.md)。
-该目录目前**只有设计与调查**，未改动训练代码、未新增依赖。
+
+实现位于根目录 `perception/`（**纯 numpy，不依赖 ROS 2，也不依赖 mjlab**），训练环境不受影响：
+
+| 模块 | 作用 |
+| --- | --- |
+| `perception/frame.py` | `TerrainFrame` 契约 + 栅格常量（13×21 @ 0.08 m，base 系 yaw 对齐） |
+| `perception/encode.py` | 冻结的 273 维观测编码（`clip(-1,1)`，未命中 → 1.0） |
+| `perception/sources/sim.py` | MuJoCo 射线传感器 → `TerrainFrame` |
+| `perception/sources/replay.py` | `.npz` 帧包读写与回放（第二阶段离线验证用） |
+| `perception/augment.py` | 噪声/丢点/FOV 掩膜/平滑/延迟（训练侧 sim2real 增强） |
+
+```bash
+# 单元测试（42 项，CPU，约 0.3 s）
+uv run python -m unittest discover -s tests -t .
+
+# 黄金测试：编码器与训练观测逐元素比对（需要 CPU 后端，首次编译较慢）
+uv run python tools/check_perception_alignment.py
+```
+
+2026-10-26 实测：Flat / StepStone 各 12 步 × 2 环境，`max|diff| = 0.0`。

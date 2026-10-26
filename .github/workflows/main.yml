@@ -38,7 +38,16 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Python 语法编译
-        run: python -m compileall -q src tools
+        run: python -m compileall -q src tools perception tests
+
+      - name: 感知接口单元测试（纯 numpy，无 GPU / 无 ROS）
+        run: |
+          python -m pip install --quiet numpy
+          set -o pipefail
+          python -m unittest discover -s tests -t . -v 2>&1 | tail -n 25
+
+      - name: perception 包不依赖 ROS 2 / mjlab
+        run: python -c "import perception, sys; assert 'rclpy' not in sys.modules and 'mjlab' not in sys.modules; print('perception import ok')"
 
       - name: 工作流 YAML 可解析
         run: |
