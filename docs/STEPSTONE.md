@@ -45,12 +45,22 @@
 
 升级/降级（`src/robot/mdp/stepstone.py: stepstone_levels`）：
 
-- **升级**：本回合机身沿 +x 走过整段桩区（`> 2.8 m`，即进入终点平台）；
-- **降级**：走不到全程的 25%（`< 0.7 m`），说明当前难度处理不了；
-- 每次 reset 时结算，和 `terrain_levels_vel_strict` 的调用时机一致。
+- **升级**：本回合机身沿 **+x 的有符号位移** `> 2.8 m`（即进入终点平台），与成功判定
+  `reached_goal` 同一口径；
+- **降级**：沿 +x 的位移 `< 0.7 m`（全程 25%），说明当前难度处理不了；
+- 逐环境结算，在 `_reset_idx` 里、reset 之前调用（读到的是回合结束时的位置）；
+- 首次 reset（`episode_length_buf == 0`）跳过，避免“机器人还停在世界原点”被误判升级。
 
-外加 `command_x_levels`：`forward_progress` 跟踪率达到 0.6 就把速度指令范围
-向上抬 0.05 m/s，初始 0.3–0.5 m/s，上限由 `ranges.lin_vel_x`（0.3–0.8）约束。
+> 早先版本用 XY 欧氏距离，横向漂移会被算成“前进”，走歪的回合也可能升级；现在与
+> 成功条件一致，只看 +x 位移。
+
+外加 `command_x_levels`（`src/robot/mdp/curriculums.py: command_levels_adaptive`）：
+`forward_progress` 的**每步平均跟踪率**超过 0.6 就把速度指令范围向上抬 0.05 m/s，
+初始 0.3–0.5 m/s，上限由 `ranges.lin_vel_x`（0.3–0.8）约束。
+
+> 归一化用**实际回合时长**（`episode_length_buf × step_dt`）。早先固定除以
+> `episode_length_s = 20 s`，而成功/摔倒的回合远短于 20 s，会把跟踪率系统性压低
+> （6 s 的回合只算出 0.24，真实是 0.80），速度课程因此永远升不上去。
 
 ## 3. 奖励
 

@@ -1,4 +1,4 @@
-"""梅花桩任务专用的奖励 / 终止 / 课程项（对应 16DOF_RL.md 第 3、5、6 节）。
+﻿"""梅花桩任务专用的奖励 / 终止 / 课程项（对应 16DOF_RL.md 第 3、5、6 节）。
 
 设计要点：
 
@@ -44,7 +44,10 @@ def forward_progress(
         asset_cfg = SceneEntityCfg("robot")
     asset: Entity = env.scene[asset_cfg.name]
     cmd = env.command_manager.get_command(command_name)[:, :2]
-    v = asset.data.root_link_lin_vel_w[:, :2]
+    # 指令是机体系（UniformVelocityCommand），所以速度也必须取机体系；
+    # 用世界系速度去点乘机体系指令，在偏航后会把正确跟踪算成 0（mjlab 的速度跟踪
+    # 奖励同样用 root_link_lin_vel_b，保持一致）。
+    v = asset.data.root_link_lin_vel_b[:, :2]
 
     norm = torch.norm(cmd, dim=1, keepdim=True)
     fallback = torch.zeros_like(cmd)
@@ -85,7 +88,7 @@ def wheel_slip(
 
     found = (sensor.data.found > 0).float()  # [B, P]，P = 轮子数
     wheel_vel = asset.data.joint_vel[:, asset_cfg.joint_ids]
-    body_vx = asset.data.root_link_lin_vel_w[:, 0:1]
+    body_vx = asset.data.root_link_lin_vel_b[:, 0:1]
 
     n = min(found.shape[1], wheel_vel.shape[1])
     slip = torch.abs(wheel_vel[:, :n] * wheel_radius - body_vx)
@@ -144,17 +147,16 @@ def stepstone_levels(
     assert terrain is not None
     assert terrain.env_origins is not None
 
-    distance = torch.norm(
-        asset.data.root_link_pos_w[env_ids, :2] - terrain.env_origins[env_ids, :2],
-        dim=1,
-    )
+    # 用**沿 +x 的有符号位移**判定，而不是 XY 欧氏距离：成功条件（reached_goal）只看 x，
+    # 欧氏距离会把横向漂移算成“前进”，导致走歪但没过的回合也被升级。
+    dx = asset.data.root_link_pos_w[env_ids, 0] - terrain.env_origins[env_ids, 0]
 
     # 首次 reset 时机器人数据还停在世界原点，distance 是假的，会误判升级。
     # 用 episode_length_buf 过滤掉“还没跑过任何 step”的环境。
     valid = env.episode_length_buf[env_ids] > 0
 
-    move_up = (distance > goal_distance) & valid
-    move_down = (distance < goal_distance * min_progress_frac) & ~move_up & valid
+    move_up = (dx > goal_distance) & valid
+    move_down = (dx < goal_distance * min_progress_frac) & ~move_up & valid
 
     terrain.update_env_origins(env_ids, move_up, move_down)
 
@@ -164,5 +166,5 @@ def stepstone_levels(
         "max": torch.max(levels),
         "upgraded": move_up.float().mean(),
         "downgraded": move_down.float().mean(),
-        "distance": torch.mean(distance),
+        "distance": torch.mean(dx),
     }

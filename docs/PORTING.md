@@ -124,8 +124,12 @@ FL_hip, FL_thigh, FL_calf, FL_wheel, FR_hip, ..., RR_calf, RR_wheel
    `--agent.logger wandb` 切回。PPO 超参没有改动。
 
 以下部分**保持原样**：奖励权重与结构、命令采样与课程、域随机化、PPO 超参
-（`config/rl_cfg.py`）、观测缩放与噪声、低通/延迟动作、地形生成器、
-`enable_only_positive_rewards()` 的奖励截断、`mjlab` 本地补丁。
+（`config/rl_cfg.py`）、观测缩放与噪声、低通/延迟动作、地形生成器、`mjlab` 本地补丁。
+
+> 唯一的结构性改动是正奖励截断：原来是**全局打补丁**（`enable_only_positive_rewards()`
+> 直接替换 `RewardManager.compute`，哪个任务最后构建就影响整个进程），现在改成
+> **按环境配置的开关** `cfg.only_positive_rewards`（Rough/Crawl 为 `True`，
+> Flat/StepStone 为 `False`），语义不变但不再跨任务泄漏。
 
 ## 6. 依赖修复
 

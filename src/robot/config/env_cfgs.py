@@ -49,7 +49,7 @@ from .. import naming
 from ..robot_cfg import get_robot_cfg, get_robot_crawl_cfg, LEG_POS_SCALE, WHEEL_VEL_SCALE
 from ..mdp.lowpass_actions import JointPositionDelayedLowPassActionCfg, JointVelocityDelayedLowPassActionCfg
 from ..mdp.disturbances import apply_continuous_disturbance
-from ..mdp.only_positive_rewards import enable_only_positive_rewards
+from ..mdp.only_positive_rewards import install_only_positive_rewards
 from ..mdp.stepstone import (
     base_too_low,
     body_height_band,
@@ -163,7 +163,11 @@ def _simulation_cfg(ccd_iterations: int = 50) -> SimulationCfg:
 
 def _make_base_env_cfg() -> ManagerBasedRlEnvCfg:
     """Create the base environment configuration containing sensors, commands, and default policies."""
-    
+    # 正奖励裁剪是**按环境**的开关（见 mdp/only_positive_rewards.py）。这里统一关掉，
+    # 让每个任务自己决定，而不是继承上一个 builder 留在进程里的全局状态。
+    # Rough / Crawl 在自己的 builder 末尾显式打开。
+    install_only_positive_rewards()
+
     # ------------------
     # Sensors Definition
     # ------------------
@@ -393,7 +397,7 @@ def _make_base_env_cfg() -> ManagerBasedRlEnvCfg:
 
     metrics = {"mean_leg_action_acc": MetricsTermCfg(func=velocity_mdp.mean_action_acc)}
 
-    return ManagerBasedRlEnvCfg(
+    cfg = ManagerBasedRlEnvCfg(
         scene=SceneCfg(
             num_envs=2048, env_spacing=2.5,
             terrain=TerrainEntityCfg(terrain_type="generator", terrain_generator=TerrainGeneratorCfg(
@@ -408,6 +412,9 @@ def _make_base_env_cfg() -> ManagerBasedRlEnvCfg:
         sim=_simulation_cfg(),
         viewer=ViewerConfig(body_name="base_link", distance=3.0, elevation=-20.0, azimuth=45.0),
     )
+    # 默认不裁剪；Rough / Crawl 在自己的 builder 里置 True。
+    cfg.only_positive_rewards = False
+    return cfg
 
 
 def flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
@@ -424,7 +431,6 @@ def flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
 
 def rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     """Rough terrains configuration for general wheel-legged navigation."""
-    enable_only_positive_rewards()
 
     cfg = _make_base_env_cfg()
     cfg.scene.entities = {"robot": get_robot_cfg()}
@@ -763,12 +769,14 @@ def rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
             cfg.scene.terrain.terrain_generator.num_rows = 5
             cfg.scene.terrain.terrain_generator.border_width = 10.0
 
+    # 只对 Rough / Crawl 打开：每步总奖励裁剪到 >= 0（HIMLoco 风格），避免“摔倒
+    # 立刻结束以少扣分”的局部最优。Flat / StepStone 不启用，负奖励照常生效。
+    cfg.only_positive_rewards = True
     return cfg
 
 
 def crawl_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     """Crawling and ducking configuration for climbing obstacles under low clearing heights."""
-    enable_only_positive_rewards()
 
     cfg = _make_base_env_cfg()
     cfg.scene.entities = {"robot": get_robot_crawl_cfg()}
@@ -897,6 +905,9 @@ def crawl_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
             cfg.scene.terrain.terrain_generator.num_rows = 5
             cfg.scene.terrain.terrain_generator.border_width = 10.0
 
+    # 只对 Rough / Crawl 打开：每步总奖励裁剪到 >= 0（HIMLoco 风格），避免“摔倒
+    # 立刻结束以少扣分”的局部最优。Flat / StepStone 不启用，负奖励照常生效。
+    cfg.only_positive_rewards = True
     return cfg
 
 

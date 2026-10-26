@@ -1,4 +1,4 @@
-"""Adaptive command curriculum based on tracking reward performance."""
+﻿"""Adaptive command curriculum based on tracking reward performance."""
 
 from __future__ import annotations
 
@@ -130,7 +130,11 @@ class command_axis_levels_vel:
     def __call__(self, env: ManagerBasedRlEnv, env_ids: torch.Tensor, **kwargs) -> dict[str, torch.Tensor]:
         if len(env_ids) > 0:
             episode_sums = env.reward_manager._episode_sums[self._reward_name][env_ids]
-            mean_raw = torch.mean(episode_sums / env.cfg.episode_length_s / self._reward_weight).item()
+            # 按**实际**回合时长归一化：成功/摔倒会提前结束，固定除以 episode_length_s
+            # 会把每步平均跟踪率系统性压低（回合越短压得越狠），课程永远升不上去。
+            steps = env.episode_length_buf[env_ids].to(torch.float32)
+            duration = torch.clamp(steps * env.step_dt, min=env.step_dt)
+            mean_raw = torch.mean(episode_sums / duration / self._reward_weight).item()
             self._running_mean = self._ema_alpha * mean_raw + (1.0 - self._ema_alpha) * self._running_mean
         self._set_range(self._current_max_range(env.common_step_counter))
 
@@ -215,7 +219,11 @@ class command_levels_adaptive:
     def __call__(self, env: ManagerBasedRlEnv, env_ids: torch.Tensor, **kwargs) -> dict[str, torch.Tensor]:
         if len(env_ids) > 0:
             episode_sums = env.reward_manager._episode_sums[self._reward_name][env_ids]
-            mean_raw = torch.mean(episode_sums / env.cfg.episode_length_s / self._reward_weight).item()
+            # 按**实际**回合时长归一化：成功/摔倒会提前结束，固定除以 episode_length_s
+            # 会把每步平均跟踪率系统性压低（回合越短压得越狠），课程永远升不上去。
+            steps = env.episode_length_buf[env_ids].to(torch.float32)
+            duration = torch.clamp(steps * env.step_dt, min=env.step_dt)
+            mean_raw = torch.mean(episode_sums / duration / self._reward_weight).item()
             self._running_mean = self._ema_alpha * mean_raw + (1.0 - self._ema_alpha) * self._running_mean
 
         # Check performance at the end of every episode (or every max_episode_length_s)
