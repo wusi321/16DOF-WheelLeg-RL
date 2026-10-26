@@ -1,4 +1,4 @@
-# 16DOF-WheelLeg-RL
+﻿# 16DOF-WheelLeg-RL
 
 [![CI](https://github.com/wusi321/16DOF-WheelLeg-RL/actions/workflows/main.yml/badge.svg)](https://github.com/wusi321/16DOF-WheelLeg-RL/actions/workflows/main.yml)
 
@@ -125,7 +125,7 @@ uv run play  Robot-Rough-v0
 | Actor 观测 | Flat/Rough/Crawl：53（角速度 3 + 投影重力 3 + 指令 3 + 腿位置 12 + 腿速度 12 + 轮速 4 + 上一步动作 16）<br>StepStone：**326** = 53 + 高度扫描 273（21 × 13，1.6 × 1.0 m，0.08 m 分辨率） |
 | Critic 观测 | 额外：机身线速度 3 + 轮地接触 4 + 高度扫描 273（StepStone 的 actor 也已包含高度扫描） |
 | 关节顺序 | `FL, FR, RL, RR` × `(hip, thigh, calf, wheel)` |
-| 接触配额 | `nconmax=128`、`njmax=256`；`ccd_iterations=50`（Rough/Crawl/StepStone 为 80）。**不能为 0**：MuJoCo 3.8 在 `ccd_iterations=0` 时不会给 mesh 碰撞体（轮子）生成接触，机器人会穿地 |
+| 接触配额 | `nconmax=128`、`njmax=256`；`ccd_iterations=16`。**不能低于 8**：实测 `<8` 时 warp 完全不生成轮-地接触（0 条），机器人会穿地；`≥8` 与 80 的接触完全一致。也不能设太大：warp 的 EPA 缓冲按 `ccd_iterations` 线性放大，40960 环境 × `ccd=80` 要 22.8 GB（会 OOM），`16` 只要 5.3 GB |
 
 ## 校验移植是否与模型一致
 

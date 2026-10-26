@@ -1,4 +1,4 @@
-"""Robot Environment Configurations for RL Locomotion Training.
+﻿"""Robot Environment Configurations for RL Locomotion Training.
 
 This module defines the Manager-Based RL Environment Configurations for unitree robots
 equipped with actuated wheels and leg joints. It handles sensors, actuators, command
@@ -134,7 +134,7 @@ from ..mdp.commands import UniformThresholdVelocityCommandCfg
 WHEEL_NAMES = naming.LEG_ORDER
 
 
-def _simulation_cfg(ccd_iterations: int = 50) -> SimulationCfg:
+def _simulation_cfg(ccd_iterations: int = 16) -> SimulationCfg:
     """统一的仿真配置。
 
     ``nconmax`` / ``njmax`` 是 mujoco-warp 每个 world 的接触/约束配额。go2w 打开了
@@ -143,10 +143,16 @@ def _simulation_cfg(ccd_iterations: int = 50) -> SimulationCfg:
     ``nefc overflow - please increase njmax to 70/79/97`` 并截断接触，既影响物理
     也把日志刷爆。这里统一给到 128 / 256，四个任务都够用。
 
-    ``ccd_iterations`` 不能为 0：MuJoCo 3.8 的网格碰撞（go2w 的轮子是 mesh）在
-    ``opt.ccd_iterations == 0`` 时**不会产生任何轮-地接触**，机器人会直接穿地掉下去
-    （表现为每个 episode 只有十几步就 base_ground_contact 终止）。默认取 MuJoCo
-    的 50；需要更强 CCD 的任务再传 80。
+    ``ccd_iterations`` 不能太小也不能太大（两个都是实测出来的）：
+
+    * **太小 → 没有接触**。``ccd_iterations`` 低于 8 时 MuJoCo/warp **完全不生成
+      轮-地接触**（0 条），机器人穿地、episode 十几步就终止；8 及以上是 8 条接触、
+      ``dist=-0.0011`` 完全一致。取 16 留一倍余量。
+    * **太大 → 显存爆炸**。warp 为每个 potential CCD contact 预分配 EPA 缓冲：
+      ``naccdmax × [(10+2I)·12 + (10+2I)·4 + (6+5I)·4]`` 字节，其中
+      ``naccdmax = nconmax × num_envs``、``I = ccd_iterations``。40960 环境下
+      ``I=80`` 是 **22.8 GB**（单块 epa_face 就 8.5 GB，会直接 OOM），``I=16`` 只要
+      **5.3 GB**，接触结果与 80 相同。
     """
     return SimulationCfg(
         contact_sensor_maxmatch=128,
@@ -677,7 +683,7 @@ def rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         cfg.rewards.pop(key, None)
 
     cfg.episode_length_s = 20.0
-    cfg.sim = _simulation_cfg(ccd_iterations=80)
+    cfg.sim = _simulation_cfg(ccd_iterations=16)
 
     # 移除 orientation 终止，允许机器人翻倒以学习回复
     cfg.seed = 42
@@ -886,7 +892,7 @@ def crawl_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         cfg.rewards.pop(key, None)
 
     cfg.episode_length_s = 30.0
-    cfg.sim = _simulation_cfg(ccd_iterations=80)
+    cfg.sim = _simulation_cfg(ccd_iterations=16)
 
     # Loosen orientation bad threshold to 80 degrees for steep crawling tilts
     cfg.terminations["bad_orientation"].params["limit_angle"] = math.radians(80.0)
@@ -1120,7 +1126,7 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     cfg.episode_length_s = 20.0
     cfg.decimation = 4
     cfg.seed = 42
-    cfg.sim = _simulation_cfg(ccd_iterations=80)
+    cfg.sim = _simulation_cfg(ccd_iterations=16)
 
     if play:
         cfg.episode_length_s = int(1e9)

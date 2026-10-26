@@ -114,9 +114,10 @@ FL_hip, FL_thigh, FL_calf, FL_wheel, FR_hip, ..., RR_calf, RR_wheel
      critic 的 height scanner 只对 group 0 投射射线，会让扫描打到自己的轮子上。
      这些网格被移到视觉组 2（物理不变）。
    - go2w 给所有 geom 设了 `margin=0.001`，而 mujoco-warp 在 MULTICCD
-     （`SimulationCfg` 里的 `ccd_iterations=80`）下拒绝非零 margin 的 geom 对，
+     （`SimulationCfg` 的 `ccd_iterations>0`，默认 16）下拒绝非零 margin 的 geom 对，
      直接报 `NotImplementedError`。这里把 margin 清零，保持仿真器的求解器设置
-     不变。
+     不变。`ccd_iterations` 的取值是实测出来的：低于 8 时 warp 不生成轮-地接触，
+     高于 ~32 时 EPA 预分配显存会按 env 数线性爆炸（40960 环境 × 80 ≈ 22.8 GB）。
 8. **日志后端**
    mjlab 1.4 的 `RslRlBaseRunnerCfg.logger` 默认是 `wandb`，没有 `wandb login`
    时 `uv run train` 会直接报 `No API key configured`。`rl_cfg.py` 里改成
