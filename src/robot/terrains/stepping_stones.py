@@ -1,4 +1,4 @@
-﻿"""梅花桩（stepping-stone）地形，对应 Robocon2027.xml 里的 stepping_stones 段。
+"""梅花桩（stepping-stone）地形，对应 Robocon2027.xml 里的 stepping_stones 段。
 
 实场地形（`Robocon2027.xml`）：
 
@@ -33,9 +33,14 @@ from mjlab.terrains.utils import make_plane
 from mjlab.utils.color import brand_ramp
 
 #: 课程控制点：难度 -> 参数（线性插值）。
+#:
+#: 桩高起点改成 3–5 cm：轮半径只有 8.6 cm，6 cm 的台阶**轮子爬不上去**，必须抬腿，
+#: 而课程第一级就想让策略直接抬腿是不现实的（2026-10-26 的训练就卡在这一步：走到
+#: 桩前不抬腿、直接栽进坑里）。3 cm 左右轮子可以靠扭矩滚上去，先让它学会“上桩”，
+#: 再逐级抬高到赛道的 20 cm。
 _STAGE_DIFFICULTY = np.array([0.00, 0.15, 0.30, 0.50, 0.75, 1.00])
-_HEIGHT_LOW = np.array([0.06, 0.08, 0.10, 0.10, 0.15, 0.18])
-_HEIGHT_HIGH = np.array([0.08, 0.10, 0.10, 0.15, 0.18, 0.20])
+_HEIGHT_LOW = np.array([0.03, 0.05, 0.08, 0.10, 0.15, 0.18])
+_HEIGHT_HIGH = np.array([0.05, 0.07, 0.10, 0.15, 0.18, 0.20])
 _PITCH = np.array([0.30, 0.32, 0.35, 0.45, 0.55, 0.60])
 _STAGGER = np.array([0.00, 0.05, 0.10, 0.20, 0.26, 0.30])
 _NOISE = np.array([0.00, 0.00, 0.01, 0.02, 0.025, 0.030])

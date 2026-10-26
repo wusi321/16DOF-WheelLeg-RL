@@ -1,4 +1,4 @@
-﻿"""Enforce the 2027 rules' "touch every stepping-stone top" requirement.
+"""Enforce the 2027 rules' "touch every stepping-stone top" requirement.
 
 The rules require: the robot must leave from the far platform and **every stone top
 must be contacted by a foot at least once**; falling off the side, or having half or
@@ -47,7 +47,9 @@ _STATE_ATTR = "_stepstone_coverage"
 #: Extra margin around the stone top face, metres.
 XY_TOL = 0.03
 #: Allowed mismatch between the wheel's lowest point and the stone top, metres.
-Z_TOL = 0.04
+#: 2 cm：低难度桩只有 3 cm 高，容差再大就会出现“轮子还在平台上却算踩上旁边 3 cm 桩”
+#: 的假阳性（平台轮底 z=0，桩顶 z=0.03）。
+Z_TOL = 0.02
 #: Wheels below this height (relative to the terrain origin) count as "on the ground".
 GROUND_BOTTOM_THRESHOLD = -0.25
 

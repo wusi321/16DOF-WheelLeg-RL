@@ -1,4 +1,4 @@
-﻿"""Robot Environment Configurations for RL Locomotion Training.
+"""Robot Environment Configurations for RL Locomotion Training.
 
 This module defines the Manager-Based RL Environment Configurations for unitree robots
 equipped with actuated wheels and leg joints. It handles sensors, actuators, command
@@ -1054,16 +1054,18 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
             weight=-0.5,
             params={"sensor_name": "body_collision", "threshold": 1.0},
         ),
-        # 成功一次 +60；失败终止 -50（净 +10），避免成功被终止惩罚抵消
+        # 成功一次 +60；摔倒终止 -10（不是 -50）。
+        # 早期“试着抬腿上桩”几乎必然先掉进坑里：+3/桩 的期望完全打不过 -50，
+        # 策略会学会“不尝试”（原地耗到超时）。这里把尝试成本压到可承受范围。
         "goal_reached": RewardTermCfg(
             func=goal_reached_bonus,
             weight=60.0,
             params={"distance": STEPSTONE_GOAL_DISTANCE},
         ),
-        "is_terminated": RewardTermCfg(func=envs_mdp.is_terminated, weight=-50.0),
+        "is_terminated": RewardTermCfg(func=envs_mdp.is_terminated, weight=-10.0),
         # 赛事规则：每个桩顶面必须至少被足底（轮子）接触一次。
-        # 每踩上一根新桩 +3；踩满整段 +10；轮子踩到坑底（≥2 个着地）每步 -2。
-        "stone_touch": RewardTermCfg(func=stone_touch_reward, weight=3.0),
+        # 每踩上一根新桩 +5（16 根 = 80，足以压过终点 60）；踩满整段 +10。
+        "stone_touch": RewardTermCfg(func=stone_touch_reward, weight=5.0),
         "all_stones": RewardTermCfg(func=all_stones_bonus, weight=10.0),
         "pit_contact": RewardTermCfg(
             func=pit_contact_penalty, weight=-2.0, params={"min_wheels": 2}

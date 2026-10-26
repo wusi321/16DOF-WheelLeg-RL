@@ -1,4 +1,4 @@
-"""Pure-numpy geometry for the "touch every stepping-stone top" rule.
+﻿"""Pure-numpy geometry for the "touch every stepping-stone top" rule.
 
 The 2027 rules require the robot to touch **every** stone top at least once while
 crossing; this module answers one question without any simulator or ROS dependency:
@@ -24,7 +24,7 @@ import numpy as np
 TOUCH_XY_TOL = 0.03
 
 #: Vertical tolerance between the wheel's lowest point and the stone top.
-TOUCH_Z_TOL = 0.04
+TOUCH_Z_TOL = 0.02
 
 
 def touched_stones(
