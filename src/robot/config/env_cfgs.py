@@ -1,4 +1,4 @@
-﻿"""Robot Environment Configurations for RL Locomotion Training.
+"""Robot Environment Configurations for RL Locomotion Training.
 
 This module defines the Manager-Based RL Environment Configurations for unitree robots
 equipped with actuated wheels and leg joints. It handles sensors, actuators, command
@@ -56,6 +56,9 @@ from ..mdp.stepstone import (
     body_height_band,
     forward_progress,
     goal_reached_bonus,
+    goal_with_coverage,
+    airborne_over_pit,
+    overspeed,
     reached_goal,
     stepstone_levels,
     wheel_slip,
@@ -1055,19 +1058,29 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
             weight=-0.5,
             params={"sensor_name": "body_collision", "threshold": 1.0},
         ),
-        # 成功一次 +60；摔倒终止 -10（不是 -50）。
-        # 早期“试着抬腿上桩”几乎必然先掉进坑里：+3/桩 的期望完全打不过 -50，
-        # 策略会学会“不尝试”（原地耗到超时）。这里把尝试成本压到可承受范围。
+        # 到终点给 +60，但按桩覆盖率打折（覆盖 0 -> 只拿 20%）：跳过一半桩不算通过。
         "goal_reached": RewardTermCfg(
-            func=goal_reached_bonus,
+            func=goal_with_coverage,
             weight=60.0,
-            params={"distance": STEPSTONE_GOAL_DISTANCE},
+            params={"distance": STEPSTONE_GOAL_DISTANCE, "floor": 0.2},
         ),
         "is_terminated": RewardTermCfg(func=envs_mdp.is_terminated, weight=-10.0),
+        # 反“飞越”：桩区上空且四轮全部离地 -> -1/步；超过指令速度 0.3 m/s 以上按超出量罚。
+        "airborne": RewardTermCfg(
+            func=airborne_over_pit,
+            weight=-1.0,
+            params={
+                "x_min": STEPSTONE_START_LENGTH,
+                "x_max": STEPSTONE_TERRAIN_SIZE[0] - STEPSTONE_END_LENGTH,
+            },
+        ),
+        "overspeed": RewardTermCfg(
+            func=overspeed, weight=-0.5, params={"command_name": "twist", "margin": 0.3}
+        ),
         # 赛事规则：每个桩顶面必须至少被足底（轮子）接触一次。
         # 每踩上一根新桩 +5（16 根 = 80，足以压过终点 60）；踩满整段 +10。
         "stone_touch": RewardTermCfg(func=stone_touch_reward, weight=5.0),
-        "all_stones": RewardTermCfg(func=all_stones_bonus, weight=10.0),
+        "all_stones": RewardTermCfg(func=all_stones_bonus, weight=20.0),
         "pit_contact": RewardTermCfg(
             func=pit_contact_penalty, weight=-2.0, params={"min_wheels": 2}
         ),

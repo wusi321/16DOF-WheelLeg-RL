@@ -1,4 +1,4 @@
-"""梅花桩任务专用的奖励 / 终止 / 课程项（对应 16DOF_RL.md 第 3、5、6 节）。
+﻿"""梅花桩任务专用的奖励 / 终止 / 课程项（对应 16DOF_RL.md 第 3、5、6 节）。
 
 设计要点：
 
@@ -207,3 +207,64 @@ def stepstone_levels(
         "level_cap": torch.tensor(float(level_cap), device=env.device),
         "capped": capped.float().mean(),
     }
+
+def wheel_contact_any(env: "ManagerBasedRlEnv", sensor_name: str = "feet_ground_contact") -> torch.Tensor:
+    """任意一个轮子有接触（bool [B]）。没有传感器时退化为“总是有接触”。"""
+    try:
+        sensor = env.scene[sensor_name]
+    except (KeyError, ValueError):
+        return torch.ones(env.num_envs, dtype=torch.bool, device=env.device)
+    return (sensor.data.found > 0.5).any(dim=1)
+
+
+def airborne_over_pit(
+    env: "ManagerBasedRlEnv",
+    x_min: float,
+    x_max: float,
+    sensor_name: str = "feet_ground_contact",
+    asset_cfg: SceneEntityCfg | None = None,
+) -> torch.Tensor:
+    """处在桩区上空且**四个轮子全部离地**时给 1（配合负权重）。
+
+    2026-10-26 的 500 迭代里策略学会了“起速→飞越”：所有难度都是高速冲过去，
+    覆盖率只有 0.43，高难度的宽间距也靠滞空跨过。这条惩罚把“没有支撑”显式标出来。
+    """
+    if asset_cfg is None:
+        asset_cfg = SceneEntityCfg("robot")
+    asset: Entity = env.scene[asset_cfg.name]
+    x = asset.data.root_link_pos_w[:, 0] - env.scene.env_origins[:, 0]
+    over = (x > x_min) & (x < x_max)
+    return (over & ~wheel_contact_any(env, sensor_name)).float()
+
+
+def overspeed(
+    env: "ManagerBasedRlEnv",
+    command_name: str,
+    margin: float = 0.3,
+    asset_cfg: SceneEntityCfg | None = None,
+) -> torch.Tensor:
+    """超出指令速度 + margin 的部分（m/s），配合负权重抑制“无脑狂冲”。"""
+    if asset_cfg is None:
+        asset_cfg = SceneEntityCfg("robot")
+    asset: Entity = env.scene[asset_cfg.name]
+    cmd = env.command_manager.get_command(command_name)[:, 0].abs()
+    v = asset.data.root_link_lin_vel_b[:, 0].abs()
+    return torch.clamp(v - (cmd + margin), min=0.0)
+
+
+def goal_with_coverage(
+    env: "ManagerBasedRlEnv",
+    distance: float,
+    floor: float = 0.2,
+    asset_cfg: SceneEntityCfg | None = None,
+) -> torch.Tensor:
+    """到达终点，但奖励按**桩覆盖率**打折：`floor + (1-floor) * coverage`。
+
+    规则要求“每个桩顶面至少与足底接触一次”。原来只要 x 超过终点就给满 +60，
+    跳过一半的桩也能拿满分；现在覆盖率 0 只能拿 20%。
+    """
+    reached = reached_goal(env, distance, asset_cfg).float()
+    from .stone_coverage import stone_coverage
+
+    coverage = torch.clamp(stone_coverage(env), 0.0, 1.0)
+    return reached * (floor + (1.0 - floor) * coverage)

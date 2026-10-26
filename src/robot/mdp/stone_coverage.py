@@ -1,4 +1,4 @@
-"""Enforce the 2027 rules' "touch every stepping-stone top" requirement.
+﻿"""Enforce the 2027 rules' "touch every stepping-stone top" requirement.
 
 The rules require: the robot must leave from the far platform and **every stone top
 must be contacted by a foot at least once**; falling off the side, or having half or
@@ -240,8 +240,25 @@ def _state(env: "ManagerBasedRlEnv") -> _StoneCoverageState:
     return state
 
 
+def _wheel_contact(env: "ManagerBasedRlEnv", num_wheels: int) -> torch.Tensor | None:
+    """``(B, W)`` bool of wheel-ground contacts, or ``None`` when no sensor is present."""
+    try:
+        sensor = env.scene["feet_ground_contact"]
+    except (KeyError, ValueError):
+        return None
+    found = sensor.data.found
+    if found.ndim != 2 or found.shape[1] != num_wheels:
+        return None
+    return found > 0.5
+
+
 def _touched(env: "ManagerBasedRlEnv", state: _StoneCoverageState) -> torch.Tensor:
-    """``(B, S)`` bool: which stones are touched right now."""
+    """``(B, S)`` bool: which stones are touched right now.
+
+    A wheel counts as touching a stone only when it is *in contact* (contact sensor
+    ``found``) as well as geometrically on top of it. Without the contact check a
+    fast robot that flies over a stone gets credited for "touching" it.
+    """
     robot = env.scene["robot"]
     if not state.wheel_ids:
         return torch.zeros_like(state.valid)
@@ -249,6 +266,7 @@ def _touched(env: "ManagerBasedRlEnv", state: _StoneCoverageState) -> torch.Tens
     pos = robot.data.body_link_pos_w[:, state.wheel_ids] - env.scene.env_origins[:, None, :]
     wheel_xy = pos[..., :2]
     bottom = pos[..., 2] - naming.WHEEL_RADIUS
+    contact = _wheel_contact(env, len(state.wheel_ids))
 
     sx = state.stones[:, None, :, 0]  # (B, 1, S)
     sy = state.stones[:, None, :, 1]
@@ -261,6 +279,8 @@ def _touched(env: "ManagerBasedRlEnv", state: _StoneCoverageState) -> torch.Tens
     dz = (bottom[:, :, None] - top).abs()
     inside = (dx <= shx + XY_TOL) & (dy <= shy + XY_TOL)
     hit = inside & (dz <= Z_TOL) & state.valid[:, None, :]
+    if contact is not None:
+        hit = hit & contact[:, :, None]
     return hit.any(dim=1)
 
 
