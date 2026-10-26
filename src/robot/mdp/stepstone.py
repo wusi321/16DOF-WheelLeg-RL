@@ -147,9 +147,16 @@ def stepstone_levels(
     env_ids: torch.Tensor,
     goal_distance: float,
     min_progress_frac: float = 0.25,
+    steps_per_level: int = 1200,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ) -> dict[str, torch.Tensor]:
-    """梅花桩课程：通过整段地形升级，几乎原地不动降级。
+    """梅花桩课程：通过整段地形升级，几乎原地不动降级，**并按训练进度封顶**。
+
+    封顶（``steps_per_level``）是为了解决 2026-10-26 长训练里观察到的现象：
+    性能在 50–150 迭代爬到峰值，之后每升一级难度就暴跌、再也回不来。原因是
+    40960 个环境里只要有一部分通过，整批就会连跳两三级，策略还没适应就进入更难
+    的地形。这里用 ``common_step_counter`` 线性放行等级：每 ``steps_per_level``
+    个策略步（24 步 ≈ 1 迭代）才允许升一级，10 级 ≈ 500 迭代走完，和总迭代数对齐。
 
     与 `terrain_levels_vel_strict` 一致，在 reset 之前调用，因此读到的位置
     是本回合结束时的位置。
@@ -172,6 +179,22 @@ def stepstone_levels(
 
     terrain.update_env_origins(env_ids, move_up, move_down)
 
+    # ---- 等级封顶：每 steps_per_level 个策略步放行一级 ----
+    max_level = int(getattr(terrain, "max_terrain_level", 0))
+    if steps_per_level > 0:
+        level_cap = min(int(getattr(env, "common_step_counter", 0)) // int(steps_per_level), max_level)
+    else:
+        level_cap = max_level
+
+    before = terrain.terrain_levels[env_ids].clone()
+    terrain.terrain_levels[env_ids] = torch.clamp(terrain.terrain_levels[env_ids], max=level_cap)
+    capped = terrain.terrain_levels[env_ids] < before
+    if bool(capped.any()):
+        ids = env_ids[capped]
+        terrain.env_origins[ids] = terrain.terrain_origins[
+            terrain.terrain_levels[ids], terrain.terrain_types[ids]
+        ]
+
     levels = terrain.terrain_levels.float()
     return {
         "mean": torch.mean(levels),
@@ -179,4 +202,6 @@ def stepstone_levels(
         "upgraded": move_up.float().mean(),
         "downgraded": move_down.float().mean(),
         "distance": torch.mean(dx),
+        "level_cap": torch.tensor(float(level_cap), device=env.device),
+        "capped": capped.float().mean(),
     }
