@@ -1,4 +1,4 @@
-﻿# 16DOF-WheelLeg-RL
+# 16DOF-WheelLeg-RL
 
 [![CI](https://github.com/wusi321/16DOF-WheelLeg-RL/actions/workflows/main.yml/badge.svg)](https://github.com/wusi321/16DOF-WheelLeg-RL/actions/workflows/main.yml)
 
@@ -8,6 +8,22 @@
 mjlab / MuJoCo-Warp / RSL-RL），机器人模型替换为 `go2w/go2w.xml`。
 地形配置沿用源工程的 Flat / Rough / Crawl 三套任务；比赛地图
 `Robocon2027.xml` 暂未接入，等确定用法后再接。
+
+## 演示
+
+梅花桩任务（`Robot-StepStone-v0`）的回放视频：
+
+- 🎬 **[assets/videos/stepstone_demo.mp4](assets/videos/stepstone_demo.mp4)**（原始文件名 `创飞梅花桩.mp4`）
+
+> 其余任务的回放可以用 `uv run play <Task> --num-envs 12` 自己录；
+> 梅花桩按难度看：`uv run python tools/play_stepstone_levels.py --checkpoint-file <ckpt>`。
+
+训练曲线截图统一放在 [`assets/images/`](assets/images/) 下（按任务命名，例如
+`flat_reward.png`、`stepstone_coverage.png`），在文档里这样引用：
+
+```markdown
+![stepstone coverage](assets/images/stepstone_coverage.png)
+```
 
 ## 目录结构
 
@@ -19,6 +35,9 @@ mjlab / MuJoCo-Warp / RSL-RL），机器人模型替换为 `go2w/go2w.xml`。
 │  ├─ scene_terrain.xml      #   官方高程图场景
 │  └─ assets/                #   网格
 ├─ Robocon2027.xml           # 比赛地图（stepping_stones 段已接入训练，见 docs/STEPSTONE.md）
+├─ assets/                   # 演示素材
+│  ├─ videos/                #   回放视频（stepstone_demo.mp4）
+│  └─ images/                #   训练曲线截图（自行添加）
 ├─ src/robot/                # ★ 移植的强化学习算法
 │  ├─ __init__.py            #   任务注册（Flat / Rough / Crawl / StepStone）
 │  ├─ naming.py              # ★ go2w 名称/位姿/几何常量（唯一来源）

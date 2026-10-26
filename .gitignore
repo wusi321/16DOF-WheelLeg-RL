@@ -15,6 +15,10 @@ videos/
 wandb/
 outputs/
 
+# 演示素材：只放行仓库里 assets/ 下的视频，其余 mp4 / videos 目录仍然忽略
+!assets/videos/
+!assets/videos/*.mp4
+
 # Editors / OS
 .vscode/
 .idea/
