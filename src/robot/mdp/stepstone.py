@@ -1,4 +1,4 @@
-﻿"""梅花桩任务专用的奖励 / 终止 / 课程项（对应 16DOF_RL.md 第 3、5、6 节）。
+"""梅花桩任务专用的奖励 / 终止 / 课程项（对应 16DOF_RL.md 第 3、5、6 节）。
 
 设计要点：
 
@@ -149,6 +149,7 @@ def stepstone_levels(
     env_ids: torch.Tensor,
     goal_distance: float,
     min_progress_frac: float = 0.75,
+    demote_after: int = 2,
     steps_per_level: int = 1200,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ) -> dict[str, torch.Tensor]:
@@ -176,8 +177,24 @@ def stepstone_levels(
     # 用 episode_length_buf 过滤掉“还没跑过任何 step”的环境。
     valid = env.episode_length_buf[env_ids] > 0
 
-    move_up = (dx > goal_distance) & valid
-    move_down = (dx < goal_distance * min_progress_frac) & ~move_up & valid
+    # ---- 迟滞：连续失败 demote_after 次才降级 ----
+    # 不加迟滞时，整批环境会在两级之间同步翻转（上个等级全员通过 → 全升，新等级
+    # 全员过不去 → 全降），曲线表现为 upgraded / downgraded 反相尖峰、distance 在
+    # 1.0 和 2.8 之间来回跳（2026-10-27_21-25-29 那次就是这样）。要求连续失败才降级，
+    # 能把“翻烧饼”压下去，同时保留“长期卡住必须降级”的能力。
+    if not hasattr(terrain, "_stepstone_fails"):
+        terrain._stepstone_fails = torch.zeros(
+            env.num_envs, dtype=torch.long, device=env.device
+        )
+    fails = terrain._stepstone_fails
+
+    ok = (dx > goal_distance) & valid
+    bad = (dx < goal_distance * min_progress_frac) & ~ok & valid
+    fails[env_ids] = torch.where(ok, torch.zeros_like(fails[env_ids]), fails[env_ids] + bad.long())
+
+    move_up = ok
+    move_down = bad & (fails[env_ids] >= max(1, int(demote_after)))
+    fails[env_ids] = torch.where(move_down, torch.zeros_like(fails[env_ids]), fails[env_ids])
 
     terrain.update_env_origins(env_ids, move_up, move_down)
 
