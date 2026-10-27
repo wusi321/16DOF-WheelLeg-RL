@@ -1,4 +1,4 @@
-"""梅花桩（stepping-stone）地形，对应 Robocon2027.xml 里的 stepping_stones 段。
+﻿"""梅花桩（stepping-stone）地形，对应 Robocon2027.xml 里的 stepping_stones 段。
 
 实场地形（`Robocon2027.xml`）：
 
@@ -48,7 +48,10 @@ _NOISE = np.array([0.00, 0.00, 0.01, 0.02, 0.025, 0.030])
 #: 真正要跨越的是这个 gap；它必须显式控制，否则随 pitch 变化会被拉到 20 cm 以上，
 #: 机器人从最后一排桩下来时直接掉进坑（2026-10-26 play 里看到的现象）。
 _GAP = np.array([0.05, 0.06, 0.07, 0.09, 0.12, 0.15])
-_MISSING = np.array([0.00, 0.00, 0.00, 0.05, 0.075, 0.10])
+# 缺桩概率暂时全零：缺一根会让同侧相邻两跳变成 2*pitch（最高 1.1 m），
+# 机器人没有支撑必然摔（2026-10-28 play 第 4 张图）。难度改由
+# 桩高 / 中心距 / 错位 / 净空承担，等策略能稳定通过再逐步放开。
+_MISSING = np.array([0.00, 0.00, 0.00, 0.00, 0.00, 0.00])
 
 # 外观取自《2027 年足式机器人挑战赛 V1.0》障碍赛「梅花桩」条目：
 # 方块 200x200x200 mm、两侧平台 800x800x200 mm，表面均涂绿色水性漆。
@@ -222,13 +225,18 @@ class BoxSteppingStonesTerrainCfg(SubTerrainCfg):
             # （2026-10-27 play 里看到的现象）。
             if is_edge_row:
                 drop = [False, False]
-                lane_stagger = 0.0
             else:
                 # 中间排不允许两条桩列同时缺失，否则地形可能不可通行
                 drop = [bool(rng.random() < p_missing) for _ in range(2)]
                 if drop[0] and drop[1]:
                     drop[int(rng.integers(0, 2))] = False
-                lane_stagger = stagger
+
+            # 错位量从 0 平滑涨到 stagger 再收回 0（正弦包络）：
+            # 直接把边排的错位置 0、里面满错位，会让「边排 -> 第一排中间」出现
+            # pitch + stagger 的大跨（最高 0.9 m），狗在那儿没有支撑、必然摔
+            # （2026-10-28 play 第 4 张图就是这个位置）。
+            ramp = float(np.sin(np.pi * k / max(num_rows - 1, 1)))
+            lane_stagger = stagger * ramp
 
             for lane in (0, 1):
                 if drop[lane]:
