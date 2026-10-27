@@ -59,6 +59,7 @@ from ..mdp.stepstone import (
     goal_with_coverage,
     airborne_over_pit,
     overspeed,
+    time_out_penalty,
     reached_goal,
     stepstone_levels,
     wheel_slip,
@@ -1069,9 +1070,16 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         # 摔倒比超时更糟：摔倒丢掉所有后续机会，超时至少还在桩上。
         # 反过来（超时 -20 > 摔倒 -10）会让“过不去就赶紧摔”成为最优解——2026-10-27
         # 20:02 那次训练里 stone_coverage 从 0.45 崩到 0.07、distance 卡在 1.5 m 就是这个。
-        "is_terminated": RewardTermCfg(func=envs_mdp.is_terminated, weight=-20.0),
-        # 超时罚小一点：只用来抑制“原地磨时间”，不能重到让人宁愿摔。
-        "time_out": RewardTermCfg(func=envs_mdp.time_out, weight=-5.0),
+        # 摔倒 -10（原来 -20）：过不去时“摔一下”不该比“站着耗到超时”贵太多，
+        # 否则策略会在难等级上直接摆烂。超时罚见下面的 time_out（按距离缩放）。
+        "is_terminated": RewardTermCfg(func=envs_mdp.is_terminated, weight=-10.0),
+        # 超时罚按“离终点还差多少”缩放（越近越轻）：固定值会让“站在最后一根桩前发呆”
+        # 和“站在起点发呆”一个价，而摔倒固定 -10 -> 摆烂更划算（2026-10-27 play 里就是这个）。
+        "time_out": RewardTermCfg(
+            func=time_out_penalty,
+            weight=1.0,
+            params={"distance": STEPSTONE_GOAL_DISTANCE, "scale": -10.0},
+        ),
         # 反“飞越”：桩区上空且四轮全部离地 -> -1/步；超过指令速度 0.3 m/s 以上按超出量罚。
         "airborne": RewardTermCfg(
             func=airborne_over_pit,

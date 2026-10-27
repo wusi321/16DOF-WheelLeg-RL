@@ -294,3 +294,27 @@ def goal_with_coverage(
 
     coverage = torch.clamp(stone_coverage(env), 0.0, 1.0)
     return reached * (floor + (1.0 - floor) * coverage)
+
+def time_out_penalty(
+    env: "ManagerBasedRlEnv",
+    distance: float,
+    scale: float = -10.0,
+    asset_cfg: SceneEntityCfg | None = None,
+) -> torch.Tensor:
+    """超时惩罚，按**离终点还差多少**缩放：`scale * (1 - dx/distance)`。
+
+    原来是一个固定的 -5：对“站在终点前 10 cm”和“站在起点”罚得一样多，而摔倒固定
+    -20，于是策略在难等级上发现“站着不动耗到超时”比“试着跨过去”更划算——
+    2026-10-27 22:54 的 play 里机器人就盯着最后一根桩前的沟发呆。
+    现在越靠近终点超时罚越轻，而摔倒（is_terminated）固定 -10：
+    只要成功概率不是低到 3% 以下，尝试的期望就高于摆烂。
+    """
+    from mjlab.envs import mdp as envs_mdp
+
+    if asset_cfg is None:
+        asset_cfg = SceneEntityCfg("robot")
+    asset: Entity = env.scene[asset_cfg.name]
+    timed_out = envs_mdp.time_out(env).float()
+    dx = asset.data.root_link_pos_w[:, 0] - env.scene.env_origins[:, 0]
+    frac = torch.clamp(dx / max(distance, 1e-6), 0.0, 1.0)
+    return timed_out * scale * (1.0 - frac)
