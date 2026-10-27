@@ -11,12 +11,20 @@ mjlab / MuJoCo-Warp / RSL-RL），机器人模型替换为 `go2w/go2w.xml`。
 
 ## 演示
 
-梅花桩任务（`Robot-StepStone-v0`）的回放视频（详细曲线分析见 [`docs/TRAINING.md`](docs/TRAINING.md)）：
+梅花桩任务（`Robot-StepStone-v0`）的回放视频（详细曲线分析见 [`docs/TRAINING.md`](docs/TRAINING.md)）。
 
-| 轮次 | 表现 | 视频 |
+**本轮（`2026-10-27_07-56-35`，600 迭代）**——同一份权重在曲线"飘掉"前后的对照：
+
+| 阶段 | 表现 | 视频 |
 | --- | --- | --- |
-| 500 迭代（`2026-10-26_22-26-00`） | 课程全通，但**高速飞越**（覆盖率 0.43） | 🎬 [stepstone_demo.mp4](assets/videos/2026-10-26_22-26-00/stepstone_demo.mp4)（2.8 MB） |
-| 600 迭代（`2026-10-27_07-56-35`） | 覆盖率 0.85，但**末期趴在桩上磨时间** | 🎬 [stepstone_demo_600.mp4](assets/videos/2026-10-27_07-56-35/stepstone_demo_600.mp4)（6.2 MB） |
+| 500 迭代（切换前） | 正常过桩，覆盖率在爬升 | ⏳ `assets/videos/2026-10-27_07-56-35/stepstone_demo_500.mp4`（待补录） |
+| 600 迭代（切换后） | 覆盖率 0.85，但**末期趴在桩上磨时间**、不再过终点 | 🎬 [stepstone_demo_600.mp4](assets/videos/2026-10-27_07-56-35/stepstone_demo_600.mp4)（6.2 MB） |
+
+**上一轮（`2026-10-26_22-26-00`，500 迭代）**——旧奖励下的"高速飞越"：
+
+| 阶段 | 表现 | 视频 |
+| --- | --- | --- |
+| 全程 | 课程全通，但**靠滞空飞过**（覆盖率 0.43） | 🎬 [stepstone_demo.mp4](assets/videos/2026-10-26_22-26-00/stepstone_demo.mp4)（2.8 MB） |
 
 > 其余任务的回放可以用 `uv run play <Task> --num-envs 12` 自己录；
 > 梅花桩按难度看：`uv run python tools/play_stepstone_levels.py --checkpoint-file <ckpt>`。
