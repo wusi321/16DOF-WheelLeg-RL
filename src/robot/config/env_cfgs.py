@@ -1066,9 +1066,12 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
             weight=120.0,
             params={"distance": STEPSTONE_GOAL_DISTANCE, "floor": 0.2},
         ),
-        "is_terminated": RewardTermCfg(func=envs_mdp.is_terminated, weight=-10.0),
-        # 超时罚：不完成也能白拿“踩桩”奖励的话，最优解就是原地磨时间。
-        "time_out": RewardTermCfg(func=envs_mdp.time_out, weight=-20.0),
+        # 摔倒比超时更糟：摔倒丢掉所有后续机会，超时至少还在桩上。
+        # 反过来（超时 -20 > 摔倒 -10）会让“过不去就赶紧摔”成为最优解——2026-10-27
+        # 20:02 那次训练里 stone_coverage 从 0.45 崩到 0.07、distance 卡在 1.5 m 就是这个。
+        "is_terminated": RewardTermCfg(func=envs_mdp.is_terminated, weight=-20.0),
+        # 超时罚小一点：只用来抑制“原地磨时间”，不能重到让人宁愿摔。
+        "time_out": RewardTermCfg(func=envs_mdp.time_out, weight=-5.0),
         # 反“飞越”：桩区上空且四轮全部离地 -> -1/步；超过指令速度 0.3 m/s 以上按超出量罚。
         "airborne": RewardTermCfg(
             func=airborne_over_pit,
@@ -1111,7 +1114,7 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     cfg.curriculum = {
         "terrain_levels": CurriculumTermCfg(
             func=stepstone_levels,
-            params={"goal_distance": STEPSTONE_GOAL_DISTANCE, "min_progress_frac": 0.25},
+            params={"goal_distance": STEPSTONE_GOAL_DISTANCE, "min_progress_frac": 0.75},
         ),
         "command_x_levels": CurriculumTermCfg(
             func=command_levels_adaptive,

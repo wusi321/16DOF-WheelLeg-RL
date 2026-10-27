@@ -148,7 +148,7 @@ def stepstone_levels(
     env: "ManagerBasedRlEnv",
     env_ids: torch.Tensor,
     goal_distance: float,
-    min_progress_frac: float = 0.25,
+    min_progress_frac: float = 0.75,
     steps_per_level: int = 1200,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ) -> dict[str, torch.Tensor]:
