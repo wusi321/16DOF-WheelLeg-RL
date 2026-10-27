@@ -214,16 +214,27 @@ class BoxSteppingStonesTerrainCfg(SubTerrainCfg):
         stone_color = brand_ramp(_STONE_COLOR, 0.25 + 0.55 * float(np.clip(difficulty, 0.0, 1.0)))
 
         for k in range(num_rows):
-            # 同一排不允许两条桩列同时缺失，否则地形可能不可通行
-            drop = [bool(rng.random() < p_missing) for _ in range(2)]
-            if drop[0] and drop[1]:
-                drop[int(rng.integers(0, 2))] = False
+            is_edge_row = (k == 0) or (k == num_rows - 1)
+
+            # 进出口那一排必须两块都在、且不加错位：
+            # 否则高难度下 stagger=0.30 会把第二列的首块推到离平台 0.45 m 处，
+            # 加上 10% 缺桩，机器人根本够不到第一块桩，只能摔进坑
+            # （2026-10-27 play 里看到的现象）。
+            if is_edge_row:
+                drop = [False, False]
+                lane_stagger = 0.0
+            else:
+                # 中间排不允许两条桩列同时缺失，否则地形可能不可通行
+                drop = [bool(rng.random() < p_missing) for _ in range(2)]
+                if drop[0] and drop[1]:
+                    drop[int(rng.integers(0, 2))] = False
+                lane_stagger = stagger
 
             for lane in (0, 1):
                 if drop[lane]:
                     continue
 
-                x = float(row_x[k]) + (stagger if lane == 1 else 0.0)
+                x = float(row_x[k]) + (lane_stagger if lane == 1 else 0.0)
                 y = cy + (lane_offset if lane == 1 else -lane_offset)
                 if noise > 0.0:
                     x += float(rng.uniform(-noise, noise))

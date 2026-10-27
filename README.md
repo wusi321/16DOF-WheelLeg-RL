@@ -17,7 +17,7 @@ mjlab / MuJoCo-Warp / RSL-RL），机器人模型替换为 `go2w/go2w.xml`。
 
 | 阶段 | 表现 | 视频 |
 | --- | --- | --- |
-| 500 迭代（切换前） | 正常过桩，覆盖率在爬升 | ⏳ `assets/videos/2026-10-27_07-56-35/stepstone_demo_500.mp4`（待补录） |
+| 500 迭代（切换前） | 正常过桩，覆盖率在爬升 | 🎬 [stepstone_demo_500.mp4](assets/videos/2026-10-27_07-56-35/stepstone_demo_500.mp4)（0.5 MB） |
 | 600 迭代（切换后） | 覆盖率 0.85，但**末期趴在桩上磨时间**、不再过终点 | 🎬 [stepstone_demo_600.mp4](assets/videos/2026-10-27_07-56-35/stepstone_demo_600.mp4)（6.2 MB） |
 
 **上一轮（`2026-10-26_22-26-00`，500 迭代）**——旧奖励下的"高速飞越"：
