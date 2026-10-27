@@ -1058,13 +1058,17 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
             weight=-0.5,
             params={"sensor_name": "body_collision", "threshold": 1.0},
         ),
-        # 到终点给 +60，但按桩覆盖率打折（覆盖 0 -> 只拿 20%）：跳过一半桩不算通过。
+        # 到终点给 +120，并按桩覆盖率打折（覆盖 0 -> 只拿 20%）：跳过一半桩不算通过。
+        # 权重从 60 提到 120：2026-10-27 那次训练里策略发现“在桩上慢慢蹭、耗到超时”
+        # 比冲过终点更赚（每根桩 +5，16 根就 80），于是停在最后一根桩前不动。
         "goal_reached": RewardTermCfg(
             func=goal_with_coverage,
-            weight=60.0,
+            weight=120.0,
             params={"distance": STEPSTONE_GOAL_DISTANCE, "floor": 0.2},
         ),
         "is_terminated": RewardTermCfg(func=envs_mdp.is_terminated, weight=-10.0),
+        # 超时罚：不完成也能白拿“踩桩”奖励的话，最优解就是原地磨时间。
+        "time_out": RewardTermCfg(func=envs_mdp.time_out, weight=-20.0),
         # 反“飞越”：桩区上空且四轮全部离地 -> -1/步；超过指令速度 0.3 m/s 以上按超出量罚。
         "airborne": RewardTermCfg(
             func=airborne_over_pit,
@@ -1078,8 +1082,8 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
             func=overspeed, weight=-0.5, params={"command_name": "twist", "margin": 0.3}
         ),
         # 赛事规则：每个桩顶面必须至少被足底（轮子）接触一次。
-        # 每踩上一根新桩 +5（16 根 = 80，足以压过终点 60）；踩满整段 +10。
-        "stone_touch": RewardTermCfg(func=stone_touch_reward, weight=5.0),
+        # 单桩权重从 +5 降到 +2：16 根 32，只能作为过程引导，不能压过“过终点”。
+        "stone_touch": RewardTermCfg(func=stone_touch_reward, weight=2.0),
         "all_stones": RewardTermCfg(func=all_stones_bonus, weight=20.0),
         "pit_contact": RewardTermCfg(
             func=pit_contact_penalty, weight=-2.0, params={"min_wheels": 2}
