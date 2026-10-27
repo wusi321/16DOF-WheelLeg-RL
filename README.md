@@ -11,60 +11,21 @@ mjlab / MuJoCo-Warp / RSL-RL），机器人模型替换为 `go2w/go2w.xml`。
 
 ## 演示
 
-梅花桩任务（`Robot-StepStone-v0`）的回放视频：
+梅花桩任务（`Robot-StepStone-v0`）的回放视频（详细曲线分析见 [`docs/TRAINING.md`](docs/TRAINING.md)）：
 
-- 🎬 **[assets/videos/2026-10-26_22-26-00/stepstone_demo.mp4](assets/videos/2026-10-26_22-26-00/stepstone_demo.mp4)**（原始文件名 `创飞梅花桩.mp4`，2.8 MB）
+| 轮次 | 表现 | 视频 |
+| --- | --- | --- |
+| 500 迭代（`2026-10-26_22-26-00`） | 课程全通，但**高速飞越**（覆盖率 0.43） | 🎬 [stepstone_demo.mp4](assets/videos/2026-10-26_22-26-00/stepstone_demo.mp4)（2.8 MB） |
+| 600 迭代（`2026-10-27_07-56-35`） | 覆盖率 0.85，但**末期趴在桩上磨时间** | 🎬 [stepstone_demo_600.mp4](assets/videos/2026-10-27_07-56-35/stepstone_demo_600.mp4)（6.2 MB） |
 
 > 其余任务的回放可以用 `uv run play <Task> --num-envs 12` 自己录；
 > 梅花桩按难度看：`uv run python tools/play_stepstone_levels.py --checkpoint-file <ckpt>`。
 
-## 训练曲线
+## 训练记录
 
-以 `2026-10-26_22-26-00` 这次 500 迭代的 StepStone 训练为例（wandb 导出，完整截图在
-[`assets/images/2026-10-26_22-26-00/`](assets/images/2026-10-26_22-26-00/)）。
-
-| 曲线 | 读法 |
-| --- | --- |
-| <img src="assets/images/2026-10-26_22-26-00/1.png" width="720"><br>**地形课程** | `level_cap` 每约 50 迭代线性放行一级；`mean/max` 最终到 9；`downgraded` 在 50 迭代后归零，说明不再需要降级 |
-| <img src="assets/images/2026-10-26_22-26-00/2.png" width="720"><br>**速度指令课程** | `distance` 稳定在 2.8（=终点距离）；`x_tracking_ema` 一路涨到 3.0 —— **这是异常值**，说明它测的是"实际速度"而不是"跟踪率"（已在 `bc47895` 修正）；`x_range_max` 因此被打满到 0.8 |
-| <img src="assets/images/2026-10-26_22-26-00/3.png" width="720"><br>**任务指标** | `stone_coverage` 只有 **0.43** —— 近一半的桩没踩到；`wheel_slip` 涨到 1.3（空转严重）；`mean_leg_action_acc` 从 1.8 降到 1.1（动作变平滑） |
-| <img src="assets/images/2026-10-26_22-26-00/4.png" width="720"><br>**奖励项（一）** | `track_lin_vel_x` 在 100 迭代后掉到 ~0 —— 不再跟速度指令；`stone_touch` 稳定在 0.07 左右（被"飞越"稀释） |
-| <img src="assets/images/2026-10-26_22-26-00/5.png" width="720"><br>**奖励项（二）** | `forward_progress` 爬到 0.25 后走平；`goal_reached` 稳定在 0.05（频繁成功）；`is_terminated` 稳定在 −0.01 |
-| <img src="assets/images/2026-10-26_22-26-00/6.png" width="720"><br>**终止原因** | `goal_reached` 终止数一路涨到 ~650/迭代；`time_out` 在 50 迭代后归零；每次升级难度会看到 `base_too_low` / `bad_orientation` 的尖峰（摔下去），随后收敛 |
-| <img src="assets/images/2026-10-26_22-26-00/7.png" width="720"><br>**训练损失** | `Loss/value` 平稳（升级时尖峰是分布变化）；`entropy` 从 22.5 单调降到 11（探索收缩）；`learning_rate` 自适应下降 |
-| <img src="assets/images/2026-10-26_22-26-00/8.png" width="720"><br>**总览** | `mean_reward` 爬到 8.5 后基本走平；`mean_episode_length` 从 300 步压到 **58 步** —— 回合越来越短，正是"高速冲过去"的直接证据 |
-
-> 这组曲线对应的是**修复前**的策略（`c64bb45` 之前的奖励）：课程能一路升到 9 级、成功率很高，
-> 但 `stone_coverage` 只有 0.43、回合长度 58 步。想让策略真正"踩满每根桩"，需要
-> `c64bb45` 之后的奖励（终点按覆盖率打折 + 滞空/超速惩罚）重新训练。
-
-## 第二次训练（2026-10-27_07-56-35，600 迭代）与"末端暴跌"
-
-这组曲线跑的是 `c64bb45` 之后的奖励（覆盖率打折 + 滞空/超速惩罚）。**前 540 迭代表现很好**，
-`stone_coverage` 从 0 爬到 0.85，比上一版（0.43）明显改善；但**在 ~545 迭代出现行为切换**：
-
-| 曲线 | 现象 |
-| --- | --- |
-| <img src="assets/images/2026-10-27_07-56-35/10.png" width="720"><br>**总览** | `mean_reward` 反而**从 10 涨到 37**，`mean_episode_length` 从 200 涨到 **900 步（=20 s 超时）** |
-| <img src="assets/images/2026-10-27_07-56-35/1.png" width="720"><br>**地形课程** | `upgraded` 从 0.95 **掉到 0.05**，`distance` 停在 2.8 以下——不再跨到最后一块平台 |
-| <img src="assets/images/2026-10-27_07-56-35/2.png" width="720"><br>**速度课程** | `x_tracking_ema` 从 0.6 **掉到 0.2**（不再跟指令，因为走得很慢） |
-| <img src="assets/images/2026-10-27_07-56-35/3.png" width="720"><br>**任务指标** | `stone_coverage` 涨到 0.85（桩都摸到了），但 `goal_reached` **归零** |
-| <img src="assets/images/2026-10-27_07-56-35/6.png" width="720"><br>**奖励项** | `flat_orientation`、`body_height`、`action_rate`、`airborne` 同时恶化——姿态和动作都变差了 |
-
-**结论：奖励涨了，任务反而崩了。** 策略发现了一个更划算的局部最优：
-
-```text
-在桩上慢慢蹭，把 16 根桩都摸一遍（+5 × 16 = 80）+ 踩满奖励（+20）
-→ 然后原地耗到 20 s 超时（超时没有任何惩罚）
-对比：冲过终点只有 60 × (0.2 + 0.8 × coverage) ≈ 53
-```
-
-所以它在最后一根桩前停下，既不摔也不过——`upgraded` 归零、回合长度顶到超时上限。
-
-**修复（`6843e16`）**：`goal_reached` 60 → **120**、新增 `time_out` 惩罚 **−20**、
-`stone_touch` 5 → **2**（16 根 32，只作过程引导）、`all_stones` 保持 20。
-即"摸桩"不再比"过终点"值钱，磨时间也不再免费。
-
+两轮长训练的曲线解读、行为分析和对应的奖励改动，单独记在
+**[docs/TRAINING.md](docs/TRAINING.md)**；截图在 `assets/images/<运行时间>/`，视频在
+`assets/videos/<运行时间>/`。
 ## 目录结构
 
 ```text
@@ -75,9 +36,9 @@ mjlab / MuJoCo-Warp / RSL-RL），机器人模型替换为 `go2w/go2w.xml`。
 │  ├─ scene_terrain.xml      #   官方高程图场景
 │  └─ assets/                #   网格
 ├─ Robocon2027.xml           # 比赛地图（stepping_stones 段已接入训练，见 docs/STEPSTONE.md）
-├─ assets/                   # 演示素材
-│  ├─ videos/                #   回放视频（stepstone_demo.mp4）
-│  └─ images/                #   训练曲线截图（自行添加）
+├─ assets/                   # 演示素材（按运行时间归档）
+│  ├─ videos/<运行时间>/      #   回放视频（500 迭代 / 600 迭代各一段）
+│  └─ images/<运行时间>/      #   训练曲线截图
 ├─ src/robot/                # ★ 移植的强化学习算法
 │  ├─ __init__.py            #   任务注册（Flat / Rough / Crawl / StepStone）
 │  ├─ naming.py              # ★ go2w 名称/位姿/几何常量（唯一来源）
@@ -96,7 +57,8 @@ mjlab / MuJoCo-Warp / RSL-RL），机器人模型替换为 `go2w/go2w.xml`。
 │  └─ smoke_train_ppo.py     # 1 次 PPO 迭代（CPU 可跑，验证训练链路）
 ├─ docs/
 │  ├─ PORTING.md             # 移植说明：映射表、实测数值、与源工程的差异
-│  └─ STEPSTONE.md           # 梅花桩任务：地形/课程/奖励/终止的完整说明
+│  ├─ STEPSTONE.md           # 梅花桩任务：地形/课程/奖励/终止的完整说明
+│  └─ TRAINING.md            # 两轮长训练的曲线分析、行为退化与奖励修复记录
 ├─ setup_env.sh              # 一键测速换源 + 环境检查（Linux / WSL / Git Bash）
 ├─ pyproject.toml
 └─ uv.lock                   # 源工程的依赖锁定
