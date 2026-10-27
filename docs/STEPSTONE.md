@@ -1,4 +1,4 @@
-# 梅花桩任务（Robot-StepStone-v0）
+﻿# 梅花桩任务（Robot-StepStone-v0）
 
 按 `16DOF_RL.md` 的讨论实现，对应 `Robocon2027.xml` 里的 `stepping_stones_01_*` 段。
 
@@ -15,7 +15,7 @@
 | 两列错位 | **0.30 m** |
 | 数量 | 每列 3 根，共 6 根 |
 
-训练地形（`src/robot/terrains/stepping_stones.py`，单个 patch 4.0 × 1.6 m）：
+训练地形（`src/robot/terrains/stepping_stones.py`，单个 patch **8.0 × 1.6 m**，通行方向 2026-10-28 由 4.0 m 翻倍）：
 
 | 项 | 难度 0 | 难度 1（= 实场） |
 | --- | --- | --- |
@@ -45,7 +45,7 @@
 
 升级/降级（`src/robot/mdp/stepstone.py: stepstone_levels`）：
 
-- **升级**：本回合机身沿 **+x 的有符号位移** `> 2.8 m`（即进入终点平台），与成功判定
+- **升级**：本回合机身沿 **+x 的有符号位移** `> 6.8 m`（即进入终点平台），与成功判定
   `reached_goal` 同一口径；
 - **降级**：沿 +x 的位移 `< 0.7 m`（全程 25%），说明当前难度处理不了；
 - 逐环境结算，在 `_reset_idx` 里、reset 之前调用（读到的是回合结束时的位置）；
@@ -59,7 +59,7 @@
 初始 0.3–0.5 m/s，上限由 `ranges.lin_vel_x`（0.3–0.8）约束。
 
 > 归一化用**实际回合时长**（`episode_length_buf × step_dt`）。早先固定除以
-> `episode_length_s = 20 s`，而成功/摔倒的回合远短于 20 s，会把跟踪率系统性压低
+> `episode_length_s`（现在是 30 s），而成功/摔倒的回合远短于它，会把跟踪率系统性压低
 > （6 s 的回合只算出 0.24，真实是 0.80），速度课程因此永远升不上去。
 
 ## 3. 奖励
@@ -95,7 +95,7 @@
 
 | 终止 | 说明 |
 | --- | --- |
-| `time_out` | 20 s 超时（truncation，值函数正常 bootstrap） |
+| `time_out` | 30 s 超时（truncation，值函数正常 bootstrap；路程翻倍后由 20 s 调整） |
 | `bad_orientation` | 倾角 > 60° |
 | `base_ground_contact` | 机身（`base_link`）接触地形 |
 | `base_too_low` | 机身相对地形原点低于 0.12 m（掉进桩间/坑里） |

@@ -926,13 +926,18 @@ def crawl_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
 # 梅花桩任务（Robocon2027 的 stepping_stones 段）
 # ===========================================================================
 #: 单个地形 patch 的尺寸 (x 通行方向, y 横向) 与起终点平台长度
-STEPSTONE_TERRAIN_SIZE = (4.0, 1.6)
+#: 2026-10-28：通行方向从 4.0 m 加长到 8.0 m（"坑"的长度翻倍，多走点），
+#: 桩的数量也随之翻倍（低难度 16 → 30+ 根），所以 STEPSTONE_GOAL_DISTANCE
+#: 和 episode_length_s 都要跟着改。
+STEPSTONE_TERRAIN_SIZE = (8.0, 1.6)
 STEPSTONE_START_LENGTH = 0.8
 STEPSTONE_END_LENGTH = 0.8
-#: 出生点在起点平台中心 (x = 0.4)，终点平台从 x = 3.2 开始
+#: 出生点在起点平台中心 (x = 0.4)；终点平台起点 = 8.0 - 0.8 = 7.2
 STEPSTONE_GOAL_DISTANCE = STEPSTONE_TERRAIN_SIZE[0] - STEPSTONE_END_LENGTH - STEPSTONE_START_LENGTH / 2
 #: 课程行数：row i 的难度 = i / (num_rows - 1)
 STEPSTONE_NUM_LEVELS = 10
+#: 回合时长：路程 6.8 m，按 0.3-0.6 m/s 通过需要 12-23 s，取 30 s 留出试探/摔倒余量。
+STEPSTONE_EPISODE_S = 30.0
 
 
 def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
@@ -1156,7 +1161,7 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         }
     )
 
-    cfg.episode_length_s = 20.0
+    cfg.episode_length_s = STEPSTONE_EPISODE_S
     cfg.decimation = 4
     cfg.seed = 42
     cfg.sim = _simulation_cfg(ccd_iterations=16)
