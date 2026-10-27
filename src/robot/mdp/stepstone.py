@@ -1,4 +1,4 @@
-"""梅花桩任务专用的奖励 / 终止 / 课程项（对应 16DOF_RL.md 第 3、5、6 节）。
+﻿"""梅花桩任务专用的奖励 / 终止 / 课程项（对应 16DOF_RL.md 第 3、5、6 节）。
 
 设计要点：
 
@@ -150,6 +150,7 @@ def stepstone_levels(
     goal_distance: float,
     min_progress_frac: float = 0.75,
     demote_after: int = 2,
+    promote_prob: float = 0.5,
     steps_per_level: int = 1200,
     asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
 ) -> dict[str, torch.Tensor]:
@@ -192,7 +193,11 @@ def stepstone_levels(
     bad = (dx < goal_distance * min_progress_frac) & ~ok & valid
     fails[env_ids] = torch.where(ok, torch.zeros_like(fails[env_ids]), fails[env_ids] + bad.long())
 
-    move_up = ok
+    # ---- 概率升级：成功只以 promote_prob 的概率升一级 ----
+    # 全部一次性升级 + 全部一次性降级 = 整批同步翻转（22:10 那次仍然在震荡）。
+    # 按概率升级会让同一难度上同时留下“刚上来的”和“还没升的”环境，分布被摊开，
+    # upgraded / downgraded 才会变成小比例而不是 0↔1 的方波。
+    move_up = ok & (torch.rand(len(env_ids), device=env.device) < float(promote_prob))
     move_down = bad & (fails[env_ids] >= max(1, int(demote_after)))
     fails[env_ids] = torch.where(move_down, torch.zeros_like(fails[env_ids]), fails[env_ids])
 
@@ -205,11 +210,15 @@ def stepstone_levels(
     else:
         level_cap = max_level
 
-    before = terrain.terrain_levels[env_ids].clone()
-    terrain.terrain_levels[env_ids] = torch.clamp(terrain.terrain_levels[env_ids], max=level_cap)
-    capped = terrain.terrain_levels[env_ids] < before
-    if bool(capped.any()):
-        ids = env_ids[capped]
+    # 超过封顶的环境**随机撒回 [0, cap]**，而不是一律压到 cap：
+    # 压到 cap 会让所有环境堆在同一级，翻烧饼的根源就在这。
+    above = terrain.terrain_levels[env_ids] > level_cap
+    capped = above
+    if bool(above.any()):
+        ids = env_ids[above]
+        terrain.terrain_levels[ids] = torch.randint(
+            0, level_cap + 1, (len(ids),), device=env.device
+        )
         terrain.env_origins[ids] = terrain.terrain_origins[
             terrain.terrain_levels[ids], terrain.terrain_types[ids]
         ]
