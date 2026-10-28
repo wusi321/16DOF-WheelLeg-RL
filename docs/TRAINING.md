@@ -1,4 +1,4 @@
-﻿# 训练记录与分析
+# 训练记录与分析
 
 梅花桩任务（`Robot-StepStone-v0`）两轮长训练的曲线解读、行为分析和对应的奖励改动记录。
 截图都在 [`assets/images/`](../assets/images/)，每次训练一个以启动时间命名的子目录。
@@ -83,6 +83,38 @@
 即"摸桩"不再比"过终点"值钱，磨时间也不再免费。
 
 ---
+
+## 第 3 轮：2026-10-28_10-23-47（800 迭代，20480 并行）—— 首次稳定通过
+
+奖励版本：`efc378c`（单桩交错 zigzag、`max_step=0.46`、终点 120 / 超时按距离缩放 /
+摔倒 -10 / 踩桩 +2），地形 8 m × 1.6 m、回合 30 s。
+
+| 曲线 | 现象 |
+| --- | --- |
+| <img src="../assets/images/2026-10-28_10-23-47/8.png" width="720"><br>**终止** | `base_ground_contact` / `bad_orientation` 在 30 迭代后归零；`base_too_low` 在 300–370 有一波（课程推到 5–6 级的适应期），**380 迭代后接近 0** —— 不再摔了 |
+| <img src="../assets/images/2026-10-28_10-23-47/3.png" width="720"><br>**任务指标** | `stone_coverage` 60 迭代就到 **0.50** 并保持；`mean_leg_action_acc` 1.9 → 0.9（动作变平滑）；`wheel_slip` 200 迭代见顶 0.6，之后缓慢降到 0.5 |
+| <img src="../assets/images/2026-10-28_10-23-47/6.png" width="720"><br>**奖励项** | `goal_reached` 稳定 0.06、`forward_progress` 0.4；但 **`flat_orientation` 从 −0.004（500 迭代）掉到 −0.007（800）**，`airborne` 也从 −0.005 变到 −0.006 |
+| <img src="../assets/images/2026-10-28_10-23-47/9.png" width="720"><br>**损失与跟踪** | `entropy` 22.5 → 10（探索基本停）；`error_vel_xy` 稳定 0.5、`error_vel_yaw` 0.28 |
+
+**结论**：这一轮第一次做到了“稳定通过”——终止项归零、`goal_reached` 平台稳定，
+`distance` 稳定在 6.7/6.8 m。但 **500 迭代之后姿态项开始变差**（`flat_orientation`
+负得更多、`airborne` 更多），play 里表现为**点头撅屁股式的前后摇晃**：
+
+- 600–700 迭代是姿态和通过率的最佳平衡点；
+- 700 迭代之后 `entropy` 已经压到 10、`mean_leg_action_acc` 不再下降，策略只能靠
+  “加大动作幅度”去追剩下的那点奖励 —— 也就是用户看到的晃。
+- 复盘建议：把 `--agent.max-iterations` 设到 **650**，或者用 `model_650.pt` 作为
+  最终交付；继续加迭代只会放大摇晃。
+
+| checkpoint | 视频 |
+| --- | --- |
+| 500 迭代 | [stepstone_500it.mp4](../assets/videos/2026-10-28_10-23-47/stepstone_500it.mp4)（28 MB） |
+| 800 迭代 | [stepstone_800it.mp4](../assets/videos/2026-10-28_10-23-47/stepstone_800it.mp4)（11 MB） |
+
+> 待查：`stone_coverage` 从 60 迭代起就一直贴合 **0.50**，而成功穿越应当接近 1.0。
+> 要么是策略只踩到一半的桩（zigzag 上“隔一根踩一根”），要么是覆盖率统计把相邻
+> patch 的桩也算进了分母。用 `tools/check_stepstone_coverage.py` 单环境验证是过的，
+> 需要拿一个 checkpoint 在 play 里逐根核对。
 
 ## 复现与回放
 
