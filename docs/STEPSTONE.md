@@ -15,13 +15,14 @@
 | 两列错位 | **0.30 m** |
 | 数量 | 每列 3 根，共 6 根 |
 
-训练地形（`src/robot/terrains/stepping_stones.py`，单个 patch **8.0 × 1.6 m**，通行方向 2026-10-28 由 4.0 m 翻倍）：
+训练地形（`src/robot/terrains/stepping_stones.py`，单个 patch **8.0 × 1.6 m**，通行方向 2026-10-28 由 4.0 m 翻倍）。
+逐级俯视图见 [`docs/images/terrain_levels.png`](images/terrain_levels.png)（`uv run python tools/plot_stepstone_terrain.py` 重新生成）：
 
 | 项 | 难度 0 | 难度 1（= 实场） |
 | --- | --- | --- |
 | 桩高 | 0.06–0.08 m | 0.18–0.20 m |
-| 前后中心距 | 0.30 m | 0.60 m |
-| 两列错位 | 0 | 0.30 m |
+| 前后中心距 | 0.28 m | 0.45 m（原 0.60，2026-10-28 收紧） |
+| 两列错位 | 0 | 0.18 m（原 0.30，2026-10-28 收紧） |
 | 位置扰动 | 0 | ±0.03 m |
 | 缺桩概率 | 0 | 0（2026-10-28 起关闭，见下） |
 | 桩列横向间距 | 0.40 m（固定） | 0.40 m |
