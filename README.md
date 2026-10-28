@@ -61,6 +61,9 @@ mjlab / MuJoCo-Warp / RSL-RL），机器人模型替换为 `go2w/go2w.xml`。
 ├─ mjlab/                    # 固定版本的 mjlab 框架（本地可编辑依赖，含 2 处补丁）
 ├─ tools/
 │  ├─ check_go2w_contract.py # 离线校验：名称模式 / 关节限位 / 站立高度（只要 mujoco）
+│  ├─ check_stepstone_coverage.py # 单环境验证“每根桩都要踩到”的判定与奖励
+│  ├─ plot_stepstone_terrain.py   # 不训练、不出图：按难度画梅花桩俯视图（查间距）
+│  ├─ play_stepstone_levels.py    # 按难度回放：每个环境钉到 level 0..N-1
 │  ├─ smoke_build_env.py     # 四个任务 build+reset+step（CPU 可跑）
 │  └─ smoke_train_ppo.py     # 1 次 PPO 迭代（CPU 可跑，验证训练链路）
 ├─ docs/
@@ -114,6 +117,8 @@ uv run train Robot-Rough-v0
 uv run train Robot-Crawl-v0
 uv run train Robot-StepStone-v0
 uv run play  Robot-Rough-v0
+uv run play  Robot-StepStone-v0 --checkpoint-file logs/rsl_rl/robot_stepstone/<run>/model_650.pt
+uv run python tools/play_stepstone_levels.py --checkpoint-file <ckpt>   # 按难度看（每个环境一个等级）
 ```
 
 | Task ID | 用途 | episode |
@@ -121,20 +126,22 @@ uv run play  Robot-Rough-v0
 | `Robot-Flat-v0` | 平地基础运动 | 20 s |
 | `Robot-Rough-v0` | 台阶、随机网格、高墙、坡面、Perlin | 20 s |
 | `Robot-Crawl-v0` | 低杆 / 低姿态匍匐 | 30 s |
-| `Robot-StepStone-v0` | 梅花桩（`Robocon2027.xml` 的 stepping_stones 段） | 20 s |
+| `Robot-StepStone-v0` | 梅花桩（`Robocon2027.xml` 的 stepping_stones 段） | 30 s |
 
 ### 梅花桩任务（Robot-StepStone-v0）
 
 按 `16DOF_RL.md` 的规划实现，完整说明见 [docs/STEPSTONE.md](docs/STEPSTONE.md)：
 
-- **地形**：两条交错桩列（0.20 × 0.20 m 方桩、横向中心距 0.40 m ≈ 轮距），
-  桩高 0.06 → 0.20 m、前后中心距 0.30 → 0.60 m、错位 0 → 0.30 m、位置噪声
-  0 → ±0.03 m、缺桩 0 → 10%，最终与实场一致；桩区默认是 0.6 m 深坑，掉下去即失败。
+- **地形**：单桩交错（zigzag，0.20 × 0.20 m 方桩，左右交替 ±0.20 m），patch
+  **8.0 × 1.6 m**（通行方向 2026-10-28 由 4.0 m 翻倍），路程 6.8 m；
+  桩高 0.06 → 0.20 m、每跳中心距 0.43 → 0.46 m（`max_step` 封顶）、位置噪声
+  0 → ±0.03 m；桩区默认是 0.6 m 深坑，掉下去即失败。逐级俯视图见
+  [docs/images/terrain_levels.png](docs/images/terrain_levels.png)。
 - **课程**：10 档难度对应讨论里的 5 个阶段，通过整段地形升级、走不到 25% 降级；
   速度指令随跟踪率自适应上调（0.3–0.5 → 最高 0.8 m/s）。
 - **奖励**：实际前进进度（不用轮速）+ 速度/偏航跟踪 + 姿态/高度约束 + 轮滑 +
-  力矩/功率/动作变化率 + 机身碰撞惩罚 + 到达终点 `+60`，摔落/撞地 `-50`；
-  另按赛事规则加了逐桩约束——新踩上一根桩 `+3`、踩满整段 `+10`、≥2 个轮子触坑底
+  力矩/功率/动作变化率 + 机身碰撞惩罚 + 到达终点 `+120`（按桩覆盖率打折）、
+  另按赛事规则加了逐桩约束——新踩上一根桩 `+2`、踩满整段 `+20`、≥2 个轮子触坑底
   每步 `-2`（`src/robot/mdp/stone_coverage.py`）。
 - **观测**：actor 326 维 = 53 维本体状态 + 273 维局部高度扫描（21 × 13，1.6 × 1.0 m）。
 - **终止**：超时、倾角 > 60°、机身触地、机身过低、到达终点（成功）、NaN。
@@ -144,7 +151,7 @@ uv run play  Robot-Rough-v0
 | 项目 | 值 |
 | --- | --- |
 | 物理步长 | `0.005 s`（200 Hz），`decimation=4` → 策略 50 Hz |
-| 并行环境 | 2048 |
+| 并行环境 | 2048 起，实训练 20480（8 m 地形下 40960 会 OOM，见下） |
 | 腿执行器 | 位置控制，`Kp=50.0`、`Kd=1.5` |
 | 轮执行器 | 速度控制，`Kd=1.0` |
 | 力矩上限 | hip/thigh `23.7 Nm`、calf `45.43 Nm`、wheel `15 Nm`（取自 go2w.xml） |
@@ -155,6 +162,7 @@ uv run play  Robot-Rough-v0
 | Critic 观测 | 额外：机身线速度 3 + 轮地接触 4 + 高度扫描 273（StepStone 的 actor 也已包含高度扫描） |
 | 关节顺序 | `FL, FR, RL, RR` × `(hip, thigh, calf, wheel)` |
 | 接触配额 | `nconmax=128`、`njmax=256`；`ccd_iterations=16`。**不能低于 8**：实测 `<8` 时 warp 完全不生成轮-地接触（0 条），机器人会穿地；`≥8` 与 80 的接触完全一致。也不能设太大：warp 的 EPA 缓冲按 `ccd_iterations` 线性放大，40960 环境 × `ccd=80` 要 22.8 GB（会 OOM），`16` 只要 5.3 GB |
+| 显存经验值 | 48 GiB 卡上，**8 m 梅花桩地形（391 个 geom）× 40960 环境会 OOM**（`wp_cuda_graph_launch` 报 Warp CUDA error 2）。降到 **20480 环境**可稳定训练（约 101 次/24 h）；想保留 40960 就用 `--env.scene.terrain.terrain-generator.num-rows 6`（geom 391 → 255） | 
 
 ## 校验移植是否与模型一致
 
