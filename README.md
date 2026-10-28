@@ -34,6 +34,9 @@ mjlab / MuJoCo-Warp / RSL-RL），机器人模型替换为 `go2w/go2w.xml`。
 两轮长训练的曲线解读、行为分析和对应的奖励改动，单独记在
 **[docs/TRAINING.md](docs/TRAINING.md)**；截图在 `assets/images/<运行时间>/`，视频在
 `assets/videos/<运行时间>/`。
+
+想系统了解**怎么设计任务、怎么看懂这些曲线、常用命令有哪些**，见
+**[docs/tutorial/](docs/tutorial/)**：任务设计 / wandb 监控 / 命令速查。
 ## 目录结构
 
 ```text
@@ -69,7 +72,8 @@ mjlab / MuJoCo-Warp / RSL-RL），机器人模型替换为 `go2w/go2w.xml`。
 ├─ docs/
 │  ├─ PORTING.md             # 移植说明：映射表、实测数值、与源工程的差异
 │  ├─ STEPSTONE.md           # 梅花桩任务：地形/课程/奖励/终止的完整说明
-│  └─ TRAINING.md            # 两轮长训练的曲线分析、行为退化与奖励修复记录
+│  ├─ tutorial/              # 教程：任务设计 / wandb 监控 / 常用命令速查
+│  └─ TRAINING.md            # 每轮长训练的曲线分析、行为退化与奖励修复记录
 ├─ setup_env.sh              # 一键测速换源 + 环境检查（Linux / WSL / Git Bash）
 ├─ pyproject.toml
 └─ uv.lock                   # 源工程的依赖锁定
