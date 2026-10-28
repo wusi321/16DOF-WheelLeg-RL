@@ -1,4 +1,4 @@
-﻿"""梅花桩（stepping-stone）地形，对应 Robocon2027.xml 里的 stepping_stones 段。
+"""梅花桩（stepping-stone）地形，对应 Robocon2027.xml 里的 stepping_stones 段。
 
 实场地形（`Robocon2027.xml`）：
 
@@ -44,8 +44,11 @@ _HEIGHT_HIGH = np.array([0.05, 0.07, 0.10, 0.15, 0.18, 0.20])
 # 2026-10-28：最高档中心距从 0.60 收到 0.45（200 mm 桩 -> 净空 0.25 m）。
 # 0.60 时同侧净空 0.40 m，已经超过机器人轴距（0.385 m），只能靠斜跨；
 # 训练 300 迭代仍过不去，所以先把上限压到“轮子能直接跨”的范围。
-_PITCH = np.array([0.28, 0.30, 0.32, 0.36, 0.40, 0.45])
-_STAGGER = np.array([0.00, 0.04, 0.08, 0.12, 0.15, 0.18])
+# 2026-10-28：恢复实场规格（中心距 0.60 / 错位 0.30）。上一版收到 0.45/0.18 后
+# 同侧净空只剩 0.32 m，策略直接“平推”过去，学不到踩桩；需要更软时用
+# BoxSteppingStonesTerrainCfg.pitch_scale / stagger_scale 缩放，不要改这张表。
+_PITCH = np.array([0.30, 0.32, 0.35, 0.45, 0.55, 0.60])
+_STAGGER = np.array([0.00, 0.05, 0.10, 0.20, 0.26, 0.30])
 _NOISE = np.array([0.00, 0.00, 0.01, 0.02, 0.025, 0.030])
 #: 平台与首/末排桩之间的净空（边到边）。赛事里平台与方块都是 200 mm、顶面齐平，
 #: 真正要跨越的是这个 gap；它必须显式控制，否则随 pitch 变化会被拉到 20 cm 以上，
@@ -107,6 +110,17 @@ class BoxSteppingStonesTerrainCfg(SubTerrainCfg):
 
     edge_gap_range: tuple[float, float] = (0.05, 0.15)
     """平台与首/末排桩的净空范围，仅用于文档/校验（实际曲线见 _GAP）。"""
+
+    pitch_scale: float = 1.0
+    """中心距整体缩放（1.0 = 实场规格 0.60 m；0.75 约等于净空 0.25 m）。
+
+    间距太小（净空 < 0.25 m）策略会“平推”过去，学不到踩桩；太大（> 0.35 m）
+    又会被轴距卡住。命令行可以直接调：
+    ``--env.scene.terrain.terrain-generator.sub-terrains.box_stepping_stones.pitch-scale 0.8``
+    """
+
+    stagger_scale: float = 1.0
+    """两列错位整体缩放（1.0 = 实场 0.30 m）。错位越小越容易“直着走平推开”。"""
 
     #: 每次生成递增，用于给桩体 geom 起唯一名字（``stepstone_<n>``）。
     #: 名字是运行时恢复"哪根桩被踩过"的唯一依据，见 mdp/stone_coverage.py。
@@ -198,8 +212,8 @@ class BoxSteppingStonesTerrainCfg(SubTerrainCfg):
 
         # 4) 两条桩列：首/末排固定在离平台 gap 处，中间按 pitch 等分。
         # 这样“最后一排桩到平台”的净空由 gap 控制（5–15 cm），不会随 pitch 变成 20 cm+。
-        pitch = p["pitch"]
-        stagger = p["stagger"]
+        pitch = p["pitch"] * float(self.pitch_scale)
+        stagger = p["stagger"] * float(self.stagger_scale)
         noise = p["noise"]
         p_missing = p["missing"]
         gap = p["gap"]
