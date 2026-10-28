@@ -86,6 +86,12 @@ class BoxSteppingStonesTerrainCfg(SubTerrainCfg):
     end_length: float = 0.8
     """终点平台长度，单位 m。"""
 
+    max_step: float = 0.46
+    """相邻两根桩中心距的上限（m），保证每一步都跨得过去。
+
+    机器人轴距/轮距 0.385 m、轮半径 0.086 m，斜跨的物理上限约 0.46 m。
+    """
+
     pit_depth: float = 0.6
     """桩区外侧/桩间地面相对桩顶平台的下沉深度，单位 m。
 
@@ -233,57 +239,40 @@ class BoxSteppingStonesTerrainCfg(SubTerrainCfg):
 
         stone_color = brand_ramp(_STONE_COLOR, 0.25 + 0.55 * float(np.clip(difficulty, 0.0, 1.0)))
 
-        for k in range(num_rows):
-            is_edge_row = (k == 0) or (k == num_rows - 1)
+        # 交错单桩（zigzag）：每一步只放一根桩、左右交替，步距 = (dx, 2*lane_offset)。
+        # 2026-10-28：原来是两条平行桩列，最高难度同侧中心距 0.713 m（净空 0.513），
+        # 轴距只有 0.385 m、滚不过去；第一排并行桩本身没问题（0.375-0.416 m 能过），
+        # 真正卡住的是“同侧下一根”。改成单桩交错后每一跳的距离都相等且受 max_step 约束。
+        dy = 2.0 * lane_offset
+        dx_max = float(np.sqrt(max(0.0, float(self.max_step) ** 2 - dy**2)))
+        dx = min(pitch / 2.0, dx_max)
+        dx = max(dx, 0.10)
+        n_steps = int(np.floor(max(x_last - x_first, 0.0) / dx)) + 1
+        xs = [x_first + j * dx for j in range(n_steps)]
+        if x_last - xs[-1] > 0.5 * dx:
+            xs.append(x_last)
 
-            # 进出口那一排必须两块都在、且不加错位：
-            # 否则高难度下 stagger=0.30 会把第二列的首块推到离平台 0.45 m 处，
-            # 加上 10% 缺桩，机器人根本够不到第一块桩，只能摔进坑
-            # （2026-10-27 play 里看到的现象）。
-            if is_edge_row:
-                drop = [False, False]
-            else:
-                # 中间排不允许两条桩列同时缺失，否则地形可能不可通行
-                drop = [bool(rng.random() < p_missing) for _ in range(2)]
-                if drop[0] and drop[1]:
-                    drop[int(rng.integers(0, 2))] = False
+        for j, x in enumerate(xs):
+            lane = j % 2
+            y = cy + (lane_offset if lane else -lane_offset)
+            if noise > 0.0:
+                x += float(rng.uniform(-noise, noise))
+                y += float(rng.uniform(-noise, noise))
+            x = float(np.clip(x, x_lo, x_hi))
+            if y - y_margin < 0.0 or y + y_margin > sy:
+                continue
 
-            # 错位量从 0 平滑涨到 stagger 再收回 0（正弦包络）：
-            # 直接把边排的错位置 0、里面满错位，会让「边排 -> 第一排中间」出现
-            # pitch + stagger 的大跨（最高 0.9 m），狗在那儿没有支撑、必然摔
-            # （2026-10-28 play 第 4 张图就是这个位置）。
-            ramp = float(np.sin(np.pi * k / max(num_rows - 1, 1)))
-            lane_stagger = stagger * ramp
-
-            for lane in (0, 1):
-                if drop[lane]:
-                    continue
-
-                x = float(row_x[k]) + (lane_stagger if lane == 1 else 0.0)
-                y = cy + (lane_offset if lane == 1 else -lane_offset)
-                if noise > 0.0:
-                    x += float(rng.uniform(-noise, noise))
-                    y += float(rng.uniform(-noise, noise))
-
-                # 夹在两端平台之间，避免插进平台或 patch 外
-                x = float(np.clip(x, x_lo, x_hi))
-                if y - y_margin < 0.0 or y + y_margin > sy:
-                    continue
-
-                height = float(rng.uniform(p["height_low"], p["height_high"]))
-                # 桩从坑底一直长到目标高度：既符合“实心木桩”，也防止从下方穿过
-                bottom = -self.pit_depth
-                half_h = (height - bottom) / 2.0
-                stone = body.add_geom(
-                    type=mujoco.mjtGeom.mjGEOM_BOX,
-                    size=(half_x, half_y, half_h),
-                    pos=(x, y, bottom + half_h),
-                )
-                stone.name = f"stepstone_{self._stone_counter}"
-                self._stone_counter += 1
-                geometries.append(
-                    TerrainGeometry(geom=stone, color=stone_color)
-                )
+            height = float(rng.uniform(p["height_low"], p["height_high"]))
+            bottom = -self.pit_depth
+            half_h = (height - bottom) / 2.0
+            stone = body.add_geom(
+                type=mujoco.mjtGeom.mjGEOM_BOX,
+                size=(half_x, half_y, half_h),
+                pos=(x, y, bottom + half_h),
+            )
+            stone.name = f"stepstone_{self._stone_counter}"
+            self._stone_counter += 1
+            geometries.append(TerrainGeometry(geom=stone, color=stone_color))
 
         # 出生点抬到平台顶面：reset 的 z 是相对 env_origins 的，否则机器人会在
         # 平台上方（h_nom）生成、直接掉下来。
