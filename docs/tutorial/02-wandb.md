@@ -1,4 +1,4 @@
-# 02 · wandb 数据监控：怎么读曲线，怎么判断"是不是崩了"
+﻿# 02 · wandb 数据监控：怎么读曲线，怎么判断"是不是崩了"
 
 本项目的训练日志都推到 wandb（`--agent.logger wandb`）。这篇讲三件事：
 **怎么用**、**面板怎么摆**、**看到怪曲线怎么诊断**——全部用本项目的真实曲线当例子。
@@ -82,6 +82,12 @@ mjlab 的 key 自带前缀，直接按前缀分组即可：
 
 ### ③ `Curriculum/terrain_levels/*`
 
+<img src="../../assets/images/2026-10-26_22-26-00/1.png" width="760">
+
+> 上图是第 1 轮的课程面板：`level_cap` 每约 50 迭代放行一级（左下）、
+> `mean/max` 阶梯上升（中下/中上）、`downgraded` 在 50 迭代后归零（右下）。
+> **课程面板要横着读三张图**：cap（允许到哪）、mean（实际到哪）、upgraded/downgraded（流动性）。
+
 - `mean` 平滑上升、`max` 逼近上限、`upgraded` 稳定在 0.3–0.6 → 健康；
 - `mean` 长期不动 + `upgraded`≈0 + `downgraded`≈0 → **课程死区**（卡在某一级，
   既不升也不降）；
@@ -130,43 +136,88 @@ reward 与 coverage 同时涨又同时崩  → 课程推太快
 
 ---
 
-## 5. 三次训练的诊断实例
+## 5. 三次训练的诊断实例（带截图）
 
 ### 第 1 轮 `2026-10-26_22-26-00`：飞越
 
-```
-mean_episode_length  300 → 58      ← 异常短
-stone_coverage       0.43          ← 一半没踩
-track_lin_vel_x      0.0023        ← 不跟指令
-Episode_Termination  goal_reached 主导（≈650/迭代）
-Loss/*              全部正常
-```
+<img src="../../assets/images/2026-10-26_22-26-00/8.png" width="760">
 
-判定：**奖励被绕过**。修复 `c64bb45`。
+| 曲线 | 值 | 怎么读 |
+| --- | --- | --- |
+| `Train/mean_reward`（左下） | 爬到 8.5 走平 | 看起来"训练成功" |
+| `Train/mean_episode_length`（右下） | 300 → **58 步** | ⚠️ 真正的报警：1.16 s 走完 2.8 m = 2.4 m/s |
+| `Policy/mean_std`（上） | 0.95 → 0.45 | 策略收敛（收敛到一个坏行为） |
+
+<img src="../../assets/images/2026-10-26_22-26-00/3.png" width="760">
+
+- `stone_coverage`（中上）**只有 0.43**，且从 150 迭代起就开始下降；
+- `wheel_slip`（左上）涨到 1.3：轮子在桩上疯狂空转——它在"起跳前挠地"；
+- `goal_reached`（中下）稳定 0.05：成功终止很多，但都是"飞过去"的成功。
+
+判定：**奖励被绕过**（终点奖励与覆盖率无关 + 进度项无上限）。修复 `c64bb45`。
 
 ### 第 2 轮 `2026-10-27_07-56-35`：摆烂
 
-```
-mean_reward          10 → 37       ← 反而上涨
-mean_episode_length  200 → 900     ← 顶到超时上限
-upgraded             0.95 → 0.05
-stone_coverage       0.45 → 0.85   ← 桩都摸到了
-Loss/entropy         22.5 → 11     ← 正常收敛
-```
+<img src="../../assets/images/2026-10-27_07-56-35/10.png" width="760">
 
-判定：**局部最优**（摸桩 + 磨时间）。修复 `6843e16`。
+- 560 迭代：`mean_reward` 10 → **37**，`mean_episode_length` 200 → **900 步**；
+- 这两个**同时**出现就是"磨时间"的确诊信号（reward 涨、回合顶到超时上限）。
+
+<img src="../../assets/images/2026-10-27_07-56-35/1.png" width="760">
+
+- `upgraded`（左上）从 0.95 掉到 **0.05**、`distance`（右下）掉到 1.0–1.5 m：
+  它不再尝试过终点，只在桩上磨；
+- 同一轮的 `capped` 面板（`2026-10-27_07-56-35/2.png`）早期一直顶在 1：
+  课程封顶在钳制，说明难度推进得比能力快。
+
+<img src="../../assets/images/2026-10-27_07-56-35/3.png" width="760">
+
+- `stone_coverage`（中上）反而涨到 **0.85**、`goal_reached`（中下）→ **归零**；
+- 这是最容易被骗的一张图：**覆盖率很高、奖励很高、任务失败**。
+
+判定：**局部最优**（摸桩 + 等超时）。修复 `6843e16`（终点 120、超时罚、单桩 2）。
 
 ### 第 3 轮 `2026-10-28_10-23-47`：稳定通过 + 末期退化
 
-```
-Episode_Termination  base_* 380 迭代后≈0     ← 真的不摔了
-goal_reached         稳定 0.06
-stone_coverage       恒 0.50                 ← 只走一条桩列（旧双列地形）
-flat_orientation     500 迭代 -0.004 → 800 迭代 -0.007   ← 姿态变差
-entropy              10（触底）
-```
+<img src="../../assets/images/2026-10-28_10-23-47/8.png" width="760">
 
-判定：**前 650 迭代可用，之后只有"晃"没有提升**。交付 `model_650.pt`。
+- `base_ground_contact`（中上）、`bad_orientation`（右上）在 30 迭代后归零；
+- `base_too_low`（左上）在 300–370 有一波（≈12 次/迭代），随后压到 ≈0：
+  这是 `level_cap` 推到 5–6 级的**适应期**，属于正常，不是崩；
+- 下面一排 `Loss/*`：value loss 在 0.01–0.03、surrogate 平稳、lr 单调下降——**PPO 健康**。
+
+<img src="../../assets/images/2026-10-28_10-23-47/3.png" width="760">
+
+- `stone_coverage` 60 迭代冲到 **0.50** 后 700 多个迭代不动（旧双列地形，只踩一条列）；
+- `mean_leg_action_acc` 1.9 → 0.9：动作越来越柔——因为它不需要抬腿；
+- `wheel_slip` 200 迭代见顶后下降：不再打滑，但也不是因为踩得准。
+
+<img src="../../assets/images/2026-10-28_10-23-47/6.png" width="760">
+
+- 这就是"点头撅屁股"的证据：`flat_orientation`（右上）从 500 迭代的 −0.004
+  滑到 800 迭代的 **−0.007**，`airborne`（右下）同步变负（−0.005 → −0.006）；
+- 同时 `goal_reached` / `forward_progress` / `all_stones` 都**没有再涨**——
+  说明后面 100 多个迭代只是在"加大幅度"，没有学到新东西。
+
+判定：**前 650 迭代可用，之后只有"晃"**。交付 `model_650.pt`，并把
+`--agent.max-iterations` 固定为 650。
+
+<img src="../../assets/images/2026-10-28_10-23-47/9.png" width="760">
+
+- `Loss/entropy`（上）22.5 → 10，700 迭代后基本贴地：探索停了；
+- `Metrics/twist/error_vel_xy`（右下）稳定 0.5、`error_vel_yaw` 0.28：
+  速度跟踪其实一直不算好，但任务照样能过——**说明"过障碍"不需要精确跟踪**，
+  这也解释了为什么速度课程很早就打满。
+
+### 诊断顺序小结
+
+```
+1. Episode_Termination  → 回合怎么结束的？（摔 / 超时 / 成功）
+2. mean_episode_length  → 时长是否合理？（过短=飞越，顶格=磨时间）
+3. stone_coverage       → 任务是否按规则完成？（卡住=捷径）
+4. Episode_Reward/*     → 哪一项在主导、哪一项在恶化（姿态/滑移/滞空）
+5. Loss/* + entropy     → 确认 PPO 本身没崩（99% 的情况都是健康的）
+```
 
 ---
 
