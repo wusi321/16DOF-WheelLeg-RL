@@ -1,4 +1,4 @@
-"""Smoke test: build the go2w task envs, check the obs/action contract, step them.
+﻿"""Smoke test: build the go2w task envs, check the obs/action contract, step them.
 
 Runs on CPU too (mujoco-warp compiles its kernels for the CPU device, slowly).
     uv run python tools/smoke_build_env.py
@@ -14,6 +14,8 @@ TASKS = (
     "Robot-Rough-v0",
     "Robot-Crawl-v0",
     "Robot-StepStone-v0",
+    "Robot-GapCourse-v0",
+    "Robot-Slalom-v0",
 )
 
 #: 零动作“站立”回归检查：轮子必须和地面接触，否则机器人会穿地。
@@ -26,6 +28,8 @@ STAND_MIN_HEIGHT = {
     "Robot-Rough-v0": 0.25,
     "Robot-Crawl-v0": 0.06,
     "Robot-StepStone-v0": 0.25,
+    "Robot-GapCourse-v0": 0.25,
+    "Robot-Slalom-v0": 0.25,
 }
 
 failed = []

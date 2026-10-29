@@ -66,12 +66,14 @@ mjlab / MuJoCo-Warp / RSL-RL），机器人模型替换为 `go2w/go2w.xml`。
 │  ├─ check_go2w_contract.py # 离线校验：名称模式 / 关节限位 / 站立高度（只要 mujoco）
 │  ├─ check_stepstone_coverage.py # 单环境验证“每根桩都要踩到”的判定与奖励
 │  ├─ plot_stepstone_terrain.py   # 不训练、不出图：按难度画梅花桩俯视图（查间距）
+│  ├─ plot_course_terrain.py      # 同上，画沟壑 / 绕桩两条赛道
 │  ├─ play_stepstone_levels.py    # 按难度回放：每个环境钉到 level 0..N-1
 │  ├─ smoke_build_env.py     # 四个任务 build+reset+step（CPU 可跑）
 │  └─ smoke_train_ppo.py     # 1 次 PPO 迭代（CPU 可跑，验证训练链路）
 ├─ docs/
 │  ├─ PORTING.md             # 移植说明：映射表、实测数值、与源工程的差异
 │  ├─ STEPSTONE.md           # 梅花桩任务：地形/课程/奖励/终止的完整说明
+│  ├─ COURSES.md             # 沟壑 / 绕桩两条新赛道：地形、奖励、训练方式
 │  ├─ tutorial/              # 教程：任务设计 / wandb 监控 / 常用命令速查
 │  └─ TRAINING.md            # 每轮长训练的曲线分析、行为退化与奖励修复记录
 ├─ setup_env.sh              # 一键测速换源 + 环境检查（Linux / WSL / Git Bash）
@@ -120,6 +122,8 @@ uv run train Robot-Flat-v0
 uv run train Robot-Rough-v0
 uv run train Robot-Crawl-v0
 uv run train Robot-StepStone-v0
+uv run train Robot-GapCourse-v0
+uv run train Robot-Slalom-v0
 uv run play  Robot-Rough-v0
 uv run play  Robot-StepStone-v0 --checkpoint-file logs/rsl_rl/robot_stepstone/<run>/model_650.pt
 uv run python tools/play_stepstone_levels.py --checkpoint-file <ckpt>   # 按难度看（每个环境一个等级）
@@ -131,6 +135,8 @@ uv run python tools/play_stepstone_levels.py --checkpoint-file <ckpt>   # 按难
 | `Robot-Rough-v0` | 台阶、随机网格、高墙、坡面、Perlin | 20 s |
 | `Robot-Crawl-v0` | 低杆 / 低姿态匍匐 | 30 s |
 | `Robot-StepStone-v0` | 梅花桩（`Robocon2027.xml` 的 stepping_stones 段） | 30 s |
+| `Robot-GapCourse-v0` | 沟壑课程：0.4 m 平台 + 5→45 cm 的沟，奖励跃沟 | 25 s |
+| `Robot-Slalom-v0` | 绕桩课程：50×50 mm 方柱 + 左右交替必经点，S 形有序通过 | 30 s |
 
 ### 梅花桩任务（Robot-StepStone-v0）
 

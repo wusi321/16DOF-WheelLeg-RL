@@ -1,4 +1,4 @@
-"""Robot Environment Configurations for RL Locomotion Training.
+﻿"""Robot Environment Configurations for RL Locomotion Training.
 
 This module defines the Manager-Based RL Environment Configurations for unitree robots
 equipped with actuated wheels and leg joints. It handles sensors, actuators, command
@@ -42,7 +42,13 @@ from mjlab.terrains import (
     HfPerlinNoiseTerrainCfg,
     HfPyramidSlopedTerrainCfg,
 )
-from ..terrains import RCWallTerrainCfg, RCLowBarTerrainCfg, BoxSteppingStonesTerrainCfg
+from ..terrains import (
+    RCWallTerrainCfg,
+    RCLowBarTerrainCfg,
+    BoxSteppingStonesTerrainCfg,
+    BoxGapCourseTerrainCfg,
+    BoxSlalomTerrainCfg,
+)
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
 from mjlab.viewer import ViewerConfig
 
@@ -63,6 +69,14 @@ from ..mdp.stepstone import (
     reached_goal,
     stepstone_levels,
     wheel_slip,
+)
+from ..mdp.gap_course import gaps_crossed, leap_bonus
+from ..mdp.slalom import (
+    all_waypoints,
+    pillar_hit_penalty,
+    skip_penalty,
+    slalom_progress,
+    waypoint_reward,
 )
 from ..mdp.stone_coverage import (
     all_stones_bonus,
@@ -1178,9 +1192,292 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
             max_level = int(os.environ.get("STEPSTONE_PLAY_MAX_LEVEL", "9"))
             cfg.scene.terrain.terrain_generator.curriculum = True
             cfg.scene.terrain.terrain_generator.num_rows = max(1, max_level + 1)
-            # 每个 env 一个 patch（120 环境 = 10 行 x 12 列），否则同一等级的 env 会叠在同一个出生点。`r`n            cfg.scene.terrain.terrain_generator.num_cols = int(os.environ.get("STEPSTONE_PLAY_COLS", "12"))
+            # 每个 env 一个 patch（120 环境 = 10 行 x 12 列），否则同一等级的 env 会叠在同一个出生点。
+            cfg.scene.terrain.terrain_generator.num_cols = int(os.environ.get('STEPSTONE_PLAY_COLS', '12'))
             cfg.scene.terrain.terrain_generator.border_width = 4.0
             cfg.scene.terrain.max_init_terrain_level = max_level
             cfg.scene.terrain.env_spacing = 4.5  # patch 间隔大于尺寸，避免难度不同的地形互相穿插
+
+    return cfg
+
+# ===========================================================================
+# 沟壑课程（Robot-GapCourse-v0）：40 cm 平台 + 5..45 cm 的沟
+# ===========================================================================
+GAPCOURSE_TERRAIN_SIZE = (8.0, 1.6)
+GAPCOURSE_START_LENGTH = 0.8
+GAPCOURSE_END_LENGTH = 0.8
+GAPCOURSE_GOAL_DISTANCE = (
+    GAPCOURSE_TERRAIN_SIZE[0] - GAPCOURSE_END_LENGTH - GAPCOURSE_START_LENGTH / 2.0
+)
+GAPCOURSE_NUM_LEVELS = 10
+GAPCOURSE_EPISODE_S = 25.0
+
+
+def gapcourse_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+    """沟壑课程：一块块 40 cm 平台 + 越来越宽的沟，鼓励"越过去"。
+
+    - 地形：`BoxGapCourseTerrainCfg`，沟宽 0.05 -> 0.45 m（10 档课程）
+    - 奖励：前进 + 速度跟踪 + 姿态 + **跃沟奖励**（离地 >=2 步后落地 +5）
+    - 终止：掉沟（`base_too_low` / `base_ground_contact`）、超时、到终点
+    - 注意：**不加 `airborne` 惩罚**——这个任务就是要跳
+    """
+    cfg = _make_base_env_cfg()
+    cfg.scene.entities = {"robot": get_robot_cfg()}
+
+    cfg.scene.terrain = TerrainEntityCfg(
+        terrain_type="generator",
+        terrain_generator=TerrainGeneratorCfg(
+            size=GAPCOURSE_TERRAIN_SIZE,
+            border_width=2.0,
+            num_rows=GAPCOURSE_NUM_LEVELS,
+            num_cols=1,
+            curriculum=True,
+            difficulty_range=(0.0, 1.0),
+            sub_terrains={
+                "gaps": BoxGapCourseTerrainCfg(
+                    proportion=1.0,
+                    size=GAPCOURSE_TERRAIN_SIZE,
+                    start_length=GAPCOURSE_START_LENGTH,
+                    end_length=GAPCOURSE_END_LENGTH,
+                ),
+            },
+        ),
+        max_init_terrain_level=0,
+    )
+    cfg.scene.terrain.num_envs = 2048
+    cfg.scene.terrain.env_spacing = 2.5
+
+    cfg.observations["actor"].terms["height_scan"] = ObservationTermCfg(
+        func=safe_height_scan, params={"sensor_name": "height_scanner"}, clip=(-1.0, 1.0)
+    )
+
+    twist = cfg.commands["twist"]
+    twist.rel_standing_envs = 0.0
+    twist.rel_heading_envs = 0.0
+    if twist.ranges is not None:
+        twist.ranges.lin_vel_x = (0.4, 0.8)
+        twist.ranges.lin_vel_y = (0.0, 0.0)
+        twist.ranges.ang_vel_z = (0.0, 0.0)
+
+    cfg.rewards.update(
+        {
+            "forward_progress": RewardTermCfg(
+                func=forward_progress, weight=1.5, params={"command_name": "twist", "target_speed": 0.8}
+            ),
+            "track_lin_vel_x": RewardTermCfg(
+                func=track_linear_velocity_x, weight=0.6, params={"std": 0.25, "command_name": "twist"}
+            ),
+            "track_ang_vel_z": RewardTermCfg(
+                func=track_angular_velocity_z, weight=0.3, params={"std": 0.4, "command_name": "twist"}
+            ),
+            "goal_reached": RewardTermCfg(
+                func=goal_reached_bonus, weight=80.0, params={"distance": GAPCOURSE_GOAL_DISTANCE}
+            ),
+            "is_terminated": RewardTermCfg(func=envs_mdp.is_terminated, weight=-10.0),
+            "time_out": RewardTermCfg(
+                func=time_out_penalty,
+                weight=1.0,
+                params={"distance": GAPCOURSE_GOAL_DISTANCE, "scale": -10.0},
+            ),
+            # 跃沟：离地 >=2 步后落地 +5（鼓励真的跳过去）
+            "leap": RewardTermCfg(func=leap_bonus, weight=5.0, params={"min_air_steps": 2}),
+            "overspeed": RewardTermCfg(
+                func=overspeed, weight=-0.5, params={"command_name": "twist", "margin": 0.4}
+            ),
+        }
+    )
+
+    cfg.terminations = {
+        "time_out": TerminationTermCfg(func=envs_mdp.time_out, time_out=True),
+        "bad_orientation": TerminationTermCfg(
+            func=envs_mdp.bad_orientation, params={"limit_angle": math.radians(60.0)}
+        ),
+        "base_ground_contact": TerminationTermCfg(
+            func=velocity_mdp.illegal_contact, params={"sensor_name": "base_ground_contact"}
+        ),
+        "base_too_low": TerminationTermCfg(func=base_too_low, params={"min_height": 0.12}),
+        "goal_reached": TerminationTermCfg(
+            func=reached_goal, params={"distance": GAPCOURSE_GOAL_DISTANCE}
+        ),
+        "nan_detection": TerminationTermCfg(func=envs_mdp.nan_detection),
+    }
+
+    cfg.metrics.update(
+        {
+            "progress": MetricsTermCfg(
+                func=forward_progress, params={"command_name": "twist", "target_speed": 0.8}
+            ),
+            "wheel_slip": MetricsTermCfg(
+                func=wheel_slip,
+                params={"sensor_name": "feet_ground_contact", "wheel_radius": naming.WHEEL_RADIUS},
+            ),
+            "gaps_crossed": MetricsTermCfg(func=gaps_crossed),
+        }
+    )
+
+    cfg.curriculum = {
+        "terrain_levels": CurriculumTermCfg(
+            func=stepstone_levels,
+            params={"goal_distance": GAPCOURSE_GOAL_DISTANCE, "min_progress_frac": 0.6},
+        ),
+    }
+
+    cfg.episode_length_s = GAPCOURSE_EPISODE_S
+    cfg.decimation = 4
+    cfg.seed = 42
+    cfg.sim = _simulation_cfg(ccd_iterations=16)
+
+    if play:
+        cfg.episode_length_s = int(1e9)
+        cfg.observations["actor"].enable_corruption = False
+        cfg.events.pop("push_robot", None)
+        cfg.curriculum = {}
+        if cfg.scene.terrain is not None and cfg.scene.terrain.terrain_generator is not None:
+            max_level = int(os.environ.get("GAPCOURSE_PLAY_MAX_LEVEL", "9"))
+            cfg.scene.terrain.terrain_generator.curriculum = True
+            cfg.scene.terrain.terrain_generator.num_rows = max(1, max_level + 1)
+            cfg.scene.terrain.terrain_generator.num_cols = int(os.environ.get("GAPCOURSE_PLAY_COLS", "12"))
+            cfg.scene.terrain.max_init_terrain_level = max_level
+
+    return cfg
+
+
+# ===========================================================================
+# 绕桩课程（Robot-Slalom-v0）：一排方柱，S 形依次绕过，必经点按顺序
+# ===========================================================================
+SLALOM_TERRAIN_SIZE = (8.0, 1.6)
+SLALOM_START_LENGTH = 0.8
+SLALOM_END_LENGTH = 0.8
+SLALOM_GOAL_DISTANCE = (
+    SLALOM_TERRAIN_SIZE[0] - SLALOM_END_LENGTH - SLALOM_START_LENGTH / 2.0
+)
+SLALOM_NUM_LEVELS = 10
+SLALOM_EPISODE_S = 30.0
+
+
+def slalom_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+    """绕桩课程：柱子按横杆规格（50 x 50 mm），必经点左右交替、必须按顺序经过。
+
+    - 奖励：`waypoint_reward +5`（按顺序过一个）、`all_waypoints +30`、
+      `skip_penalty -30`（跳点）、`pillar_hit_penalty -5`（蹭柱）
+    - 终止：到终点（拿 `goal_reached`）、摔倒、超时
+    - 难度：柱距 1.00 -> 0.52 m（间距越小越难走 S）
+    """
+    cfg = _make_base_env_cfg()
+    cfg.scene.entities = {"robot": get_robot_cfg()}
+
+    cfg.scene.terrain = TerrainEntityCfg(
+        terrain_type="generator",
+        terrain_generator=TerrainGeneratorCfg(
+            size=SLALOM_TERRAIN_SIZE,
+            border_width=2.0,
+            num_rows=SLALOM_NUM_LEVELS,
+            num_cols=1,
+            curriculum=True,
+            difficulty_range=(0.0, 1.0),
+            sub_terrains={
+                "slalom": BoxSlalomTerrainCfg(
+                    proportion=1.0,
+                    size=SLALOM_TERRAIN_SIZE,
+                    start_length=SLALOM_START_LENGTH,
+                    end_length=SLALOM_END_LENGTH,
+                ),
+            },
+        ),
+        max_init_terrain_level=0,
+    )
+    cfg.scene.terrain.num_envs = 2048
+    cfg.scene.terrain.env_spacing = 2.5
+
+    cfg.observations["actor"].terms["height_scan"] = ObservationTermCfg(
+        func=safe_height_scan, params={"sensor_name": "height_scanner"}, clip=(-1.0, 1.0)
+    )
+
+    twist = cfg.commands["twist"]
+    twist.rel_standing_envs = 0.0
+    twist.rel_heading_envs = 0.0
+    if twist.ranges is not None:
+        twist.ranges.lin_vel_x = (0.4, 0.8)
+        twist.ranges.lin_vel_y = (0.0, 0.0)
+        twist.ranges.ang_vel_z = (0.0, 0.0)
+
+    cfg.rewards.update(
+        {
+            "forward_progress": RewardTermCfg(
+                func=forward_progress, weight=1.2, params={"command_name": "twist", "target_speed": 0.8}
+            ),
+            "track_lin_vel_x": RewardTermCfg(
+                func=track_linear_velocity_x, weight=0.5, params={"std": 0.25, "command_name": "twist"}
+            ),
+            "track_ang_vel_z": RewardTermCfg(
+                func=track_angular_velocity_z, weight=0.3, params={"std": 0.4, "command_name": "twist"}
+            ),
+            "waypoint": RewardTermCfg(func=waypoint_reward, weight=5.0),
+            "all_waypoints": RewardTermCfg(func=all_waypoints, weight=30.0),
+            "skip": RewardTermCfg(func=skip_penalty, weight=-30.0),
+            "pillar_hit": RewardTermCfg(func=pillar_hit_penalty, weight=-5.0),
+            "goal_reached": RewardTermCfg(
+                func=goal_reached_bonus, weight=60.0, params={"distance": SLALOM_GOAL_DISTANCE}
+            ),
+            "is_terminated": RewardTermCfg(func=envs_mdp.is_terminated, weight=-10.0),
+            "time_out": RewardTermCfg(
+                func=time_out_penalty,
+                weight=1.0,
+                params={"distance": SLALOM_GOAL_DISTANCE, "scale": -10.0},
+            ),
+            "overspeed": RewardTermCfg(
+                func=overspeed, weight=-0.5, params={"command_name": "twist", "margin": 0.4}
+            ),
+        }
+    )
+
+    cfg.terminations = {
+        "time_out": TerminationTermCfg(func=envs_mdp.time_out, time_out=True),
+        "bad_orientation": TerminationTermCfg(
+            func=envs_mdp.bad_orientation, params={"limit_angle": math.radians(60.0)}
+        ),
+        "base_ground_contact": TerminationTermCfg(
+            func=velocity_mdp.illegal_contact, params={"sensor_name": "base_ground_contact"}
+        ),
+        "base_too_low": TerminationTermCfg(func=base_too_low, params={"min_height": 0.12}),
+        "goal_reached": TerminationTermCfg(
+            func=reached_goal, params={"distance": SLALOM_GOAL_DISTANCE}
+        ),
+        "nan_detection": TerminationTermCfg(func=envs_mdp.nan_detection),
+    }
+
+    cfg.metrics.update(
+        {
+            "slalom_progress": MetricsTermCfg(func=slalom_progress),
+            "wheel_slip": MetricsTermCfg(
+                func=wheel_slip,
+                params={"sensor_name": "feet_ground_contact", "wheel_radius": naming.WHEEL_RADIUS},
+            ),
+        }
+    )
+
+    cfg.curriculum = {
+        "terrain_levels": CurriculumTermCfg(
+            func=stepstone_levels,
+            params={"goal_distance": SLALOM_GOAL_DISTANCE, "min_progress_frac": 0.6},
+        ),
+    }
+
+    cfg.episode_length_s = SLALOM_EPISODE_S
+    cfg.decimation = 4
+    cfg.seed = 42
+    cfg.sim = _simulation_cfg(ccd_iterations=16)
+
+    if play:
+        cfg.episode_length_s = int(1e9)
+        cfg.observations["actor"].enable_corruption = False
+        cfg.events.pop("push_robot", None)
+        cfg.curriculum = {}
+        if cfg.scene.terrain is not None and cfg.scene.terrain.terrain_generator is not None:
+            max_level = int(os.environ.get("SLALOM_PLAY_MAX_LEVEL", "9"))
+            cfg.scene.terrain.terrain_generator.curriculum = True
+            cfg.scene.terrain.terrain_generator.num_rows = max(1, max_level + 1)
+            cfg.scene.terrain.terrain_generator.num_cols = int(os.environ.get("SLALOM_PLAY_COLS", "12"))
+            cfg.scene.terrain.max_init_terrain_level = max_level
 
     return cfg

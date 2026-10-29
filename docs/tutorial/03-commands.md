@@ -30,6 +30,9 @@ uv run python tools/smoke_train_ppo.py        # 1 次 PPO 迭代，验证训练�
 uv run python tools/plot_stepstone_terrain.py
 uv run python tools/plot_stepstone_terrain.py --out /tmp/terrain.png
 
+# 沟壑 / 绕桩两条新赛道的俯视图（输出 docs/images/gapcourse_levels.png、slalom_levels.png）
+uv run python tools/plot_course_terrain.py
+
 # 单环境验证“每根桩都要踩到”的判定与奖励（16/42 根、+2、踩满 +20、坑底 -2）
 uv run python tools/check_stepstone_coverage.py
 ```
@@ -81,6 +84,10 @@ uv run train Robot-StepStone-v0 --resume --checkpoint-file logs/rsl_rl/robot_ste
 # 普通回放（no display 会自动用 viser 网页）
 uv run play Robot-Rough-v0
 uv run play Robot-StepStone-v0 --checkpoint-file <ckpt> --num-envs 12
+
+# 两条新赛道
+uv run train Robot-GapCourse-v0 --env.scene.num-envs 20480 --agent.algorithm.num-mini-batches 32
+uv run train Robot-Slalom-v0 --env.scene.num-envs 20480 --agent.algorithm.num-mini-batches 32
 
 # 按难度回放：每个环境钉一个等级（10 个环境 = 0..9 各一个）
 uv run python tools/play_stepstone_levels.py --checkpoint-file <ckpt>

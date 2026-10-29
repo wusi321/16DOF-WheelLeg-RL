@@ -1,4 +1,4 @@
-from mjlab.rl import (
+﻿from mjlab.rl import (
     RslRlModelCfg,
     RslRlOnPolicyRunnerCfg,
     RslRlPpoAlgorithmCfg,
@@ -70,3 +70,15 @@ def stepstone_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
     cfg.max_iterations = 20_000
     return cfg
 
+def gapcourse_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+    """沟壑课程：结构同梅花桩（多 273 维高度扫描），只换实验名。"""
+    cfg = stepstone_ppo_runner_cfg()
+    cfg.experiment_name = "robot_gapcourse"
+    return cfg
+
+
+def slalom_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+    """绕桩课程：结构同梅花桩，只换实验名。"""
+    cfg = stepstone_ppo_runner_cfg()
+    cfg.experiment_name = "robot_slalom"
+    return cfg
