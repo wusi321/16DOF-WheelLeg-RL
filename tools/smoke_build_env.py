@@ -16,6 +16,7 @@ TASKS = (
     "Robot-StepStone-v0",
     "Robot-GapCourse-v0",
     "Robot-Slalom-v0",
+    "Robot-ObstacleCombo-v0",
 )
 
 #: 零动作“站立”回归检查：轮子必须和地面接触，否则机器人会穿地。
@@ -30,6 +31,7 @@ STAND_MIN_HEIGHT = {
     "Robot-StepStone-v0": 0.25,
     "Robot-GapCourse-v0": 0.25,
     "Robot-Slalom-v0": 0.25,
+    "Robot-ObstacleCombo-v0": 0.25,
 }
 
 failed = []

@@ -82,3 +82,9 @@ def slalom_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
     cfg = stepstone_ppo_runner_cfg()
     cfg.experiment_name = "robot_slalom"
     return cfg
+
+def combo_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+    """两条赛道并排的组合任务。"""
+    cfg = stepstone_ppo_runner_cfg()
+    cfg.experiment_name = "robot_combo"
+    return cfg

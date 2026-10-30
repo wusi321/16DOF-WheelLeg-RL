@@ -6,6 +6,7 @@ from .config.env_cfgs import (
     stepstone_env_cfg,
     gapcourse_env_cfg,
     slalom_env_cfg,
+    combo_env_cfg,
 )
 from .config.rl_cfg import (
     flat_ppo_runner_cfg,
@@ -14,6 +15,7 @@ from .config.rl_cfg import (
     stepstone_ppo_runner_cfg,
     gapcourse_ppo_runner_cfg,
     slalom_ppo_runner_cfg,
+    combo_ppo_runner_cfg,
 )
 
 register_mjlab_task(
@@ -59,4 +61,12 @@ register_mjlab_task(
     env_cfg=slalom_env_cfg(),
     play_env_cfg=slalom_env_cfg(play=True),
     rl_cfg=slalom_ppo_runner_cfg(),
+)
+
+# 组合赛道：沟壑 + 绕桩并排，一次训练两条赛道
+register_mjlab_task(
+    task_id="Robot-ObstacleCombo-v0",
+    env_cfg=combo_env_cfg(),
+    play_env_cfg=combo_env_cfg(play=True),
+    rl_cfg=combo_ppo_runner_cfg(),
 )

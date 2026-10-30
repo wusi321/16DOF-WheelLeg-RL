@@ -101,7 +101,7 @@ def _build(env) -> _SlalomState:
         pts = sorted(
             (x - ox, y - oy)
             for x, y in marks
-            if -0.6 <= x - ox <= 8.4 and abs(y - oy) <= 1.2
+            if -0.6 <= x - ox <= 8.4 and abs(y - oy) <= 0.9
         )
         per_env.append(pts)
     k_max = max(1, max(len(p) for p in per_env))
@@ -117,7 +117,7 @@ def _build(env) -> _SlalomState:
     for i in range(n):
         ox, oy = float(origins[i, 0]), float(origins[i, 1])
         per_env_p.append(
-            [(x - ox, y - oy) for x, y in pillars_w if -0.6 <= x - ox <= 8.4 and abs(y - oy) <= 1.2]
+            [(x - ox, y - oy) for x, y in pillars_w if -0.6 <= x - ox <= 8.4 and abs(y - oy) <= 0.9]
         )
     p_max = max(1, max(len(p) for p in per_env_p))
     pillars = torch.zeros(n, p_max, 2, device=env.device)

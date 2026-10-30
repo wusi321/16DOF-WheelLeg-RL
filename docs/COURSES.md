@@ -1,4 +1,4 @@
-# 两条新赛道：沟壑课程 & 绕桩课程
+﻿# 两条新赛道：沟壑课程 & 绕桩课程
 
 除梅花桩外，仓库里还有两条针对"足式障碍赛"的新赛道。两者都复用同一套机器人、
 观测（53 + 273 高度扫描）、奖励基线和终止条件，只替换地形与任务奖励。
@@ -7,6 +7,7 @@
 | --- | --- | --- | --- |
 | `Robot-GapCourse-v0` | 40 cm 平台 + 5 → 45 cm 的沟 | **跃过沟壑**（不是绕、不是掉） | [gapcourse_levels.png](images/gapcourse_levels.png) |
 | `Robot-Slalom-v0` | 一排 50×50 mm 方柱 + 左右交替必经点 | **S 形有序绕桩** | [slalom_levels.png](images/slalom_levels.png) |
+| **`Robot-ObstacleCombo-v0`** | 两列并排：一列沟壑、一列绕桩，同场训练 | 一次训练两条赛道 | [combo_levels.png](images/combo_levels.png) |
 
 训练前先出图自查（不占 GPU）：
 
@@ -158,3 +159,62 @@ GAPCOURSE_PLAY_MAX_LEVEL=9 uv run play Robot-GapCourse-v0 --checkpoint-file <ckp
 | 跳点罚太轻 | `skip_penalty` 的 `scale`（默认 −30） |
 
 改完地形记得先 `uv run python tools/plot_course_terrain.py` 出图确认。
+
+---
+
+## 5. 组合地图 `Robot-ObstacleCombo-v0`（推荐先跑这个）
+
+把两条赛道**并排**放进同一张地图：mjlab 的 curriculum 模式给每个 `sub_terrain`
+分配**一列**，`proportion=0.5` 让两类环境各占一半；环境按 `terrain_types` 落到
+自己的那一列，所以一次训练里同时有 50% 在过沟、50% 在绕桩。
+
+```
+        y
+     +1.6 ┌────────────── 绕桩列 ──────────────┐   ← terrain_types = 1
+          │  ▮ ●   ▮   ●   ▮   ●   ▮          │
+       0 ─┼────────────── 分界 ────────────────┤
+          │  ███ ███ ███ ███ ███ ███ ███       │   ← terrain_types = 0
+     -1.6 └────────────── 沟壑列 ──────────────┘
+          0 ──────────────── x ──────────────→ 8 m
+```
+
+### 奖励怎么按赛道分发
+
+`src/robot/mdp/combo.py` 用 `terrain_types` 做掩码，每个奖励项只对自己那条赛道生效：
+
+| 奖励 | 只对哪列生效 |
+| --- | --- |
+| `leap`（+5）、`gaps_crossed` 指标 | 沟壑列 |
+| `waypoint` / `all_waypoints` / `skip` / `pillar_hit`、`slalom_progress` 指标 | 绕桩列 |
+| 前进 / 速度跟踪 / 姿态 / `goal_reached` / `time_out` / `is_terminated` | 两列都生效 |
+
+设计要点：**不掩码就会串味**——沟壑的环境如果也能吃到绕桩的必经点奖励（或反过来），
+两条赛道的信号会互相污染。实测掩码后：沟壑环境 `slalom waypoints = 0`、
+绕桩环境 = 6（L0），各拿各的。
+
+### 用法
+
+```bash
+# 先看图（上=绕桩列，下=沟壑列）
+uv run python tools/plot_course_terrain.py
+
+# 训练
+uv run train Robot-ObstacleCombo-v0 \
+  --env.scene.num-envs 20480 --env.sim.mujoco.ccd-iterations 16 \
+  --agent.algorithm.num-mini-batches 32 --agent.save-interval 25 \
+  --agent.max-iterations 400 --agent.logger wandb --agent.wandb-project 16dof-wheelleg
+
+# 回放
+COMBO_PLAY_MAX_LEVEL=9 uv run play Robot-ObstacleCombo-v0 --checkpoint-file <ckpt> --num-envs 10
+```
+
+### 看什么
+
+| 指标 | 期望 |
+| --- | --- |
+| `Episode_Metrics/gaps_crossed` | 只有沟壑列有值，随训练上升 |
+| `Episode_Metrics/slalom_progress` | 只有绕桩列有值，收敛到 1.0 |
+| `Episode_Reward/leap` vs `waypoint` | 两条曲线应同时增长；只有一条在动 = 掩码错了 |
+| `Episode_Termination/base_too_low` | 应压到 0（沟壑那边掉沟会顶起来） |
+
+> 冒烟已验证：6 → 7 个任务全部 build/reset/step 通过，零动作站立 100 步不摔。

@@ -137,6 +137,7 @@ uv run python tools/play_stepstone_levels.py --checkpoint-file <ckpt>   # 按难
 | `Robot-StepStone-v0` | 梅花桩（`Robocon2027.xml` 的 stepping_stones 段） | 30 s |
 | `Robot-GapCourse-v0` | 沟壑课程：0.4 m 平台 + 5→45 cm 的沟，奖励跃沟 | 25 s |
 | `Robot-Slalom-v0` | 绕桩课程：50×50 mm 方柱 + 左右交替必经点，S 形有序通过 | 30 s |
+| `Robot-ObstacleCombo-v0` | **两列并排**：沟壑 + 绕桩同场训练，奖励按赛道分发 | 28 s |
 
 ### 梅花桩任务（Robot-StepStone-v0）
 
