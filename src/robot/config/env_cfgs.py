@@ -78,6 +78,7 @@ from ..mdp.slalom import (
     slalom_progress,
     waypoint_reward,
 )
+from ..mdp.progress_gate import idle_penalty
 from ..mdp.combo import (
     all_waypoints_on_slalom,
     gaps_crossed_on_gap,
@@ -1289,7 +1290,16 @@ def gapcourse_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
                 params={"distance": GAPCOURSE_GOAL_DISTANCE, "scale": -10.0},
             ),
             # 跃沟：离地 >=2 步后落地 +5（鼓励真的跳过去）
-            "leap": RewardTermCfg(func=leap_bonus, weight=5.0, params={"min_air_steps": 2}),
+            "leap": RewardTermCfg(
+                func=leap_bonus,
+                weight=5.0,
+                params={"min_air_steps": 2, "min_advance": 0.25},
+            ),
+            "idle": RewardTermCfg(
+                func=idle_penalty,
+                weight=1.0,
+                params={"idle_steps": 75, "min_gain": 0.03, "scale": -0.5},
+            ),
             "overspeed": RewardTermCfg(
                 func=overspeed, weight=-0.5, params={"command_name": "twist", "margin": 0.4}
             ),
@@ -1433,6 +1443,11 @@ def slalom_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
                 func=time_out_penalty,
                 weight=1.0,
                 params={"distance": SLALOM_GOAL_DISTANCE, "scale": -10.0},
+            ),
+            "idle": RewardTermCfg(
+                func=idle_penalty,
+                weight=1.0,
+                params={"idle_steps": 75, "min_gain": 0.03, "scale": -0.5},
             ),
             "overspeed": RewardTermCfg(
                 func=overspeed, weight=-0.5, params={"command_name": "twist", "margin": 0.4}
@@ -1582,7 +1597,11 @@ def combo_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
                 params={"std": 0.4, "command_name": "twist"},
             ),
             # ---- 沟壑列 ----
-            "leap": RewardTermCfg(func=leap_bonus_on_gap, weight=5.0, params={"min_air_steps": 2}),
+            "leap": RewardTermCfg(
+                func=leap_bonus_on_gap,
+                weight=5.0,
+                params={"min_air_steps": 2, "min_advance": 0.25},
+            ),
             # ---- 绕桩列 ----
             "waypoint": RewardTermCfg(func=waypoint_reward_on_slalom, weight=5.0),
             "all_waypoints": RewardTermCfg(func=all_waypoints_on_slalom, weight=30.0),
@@ -1597,6 +1616,11 @@ def combo_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
                 func=time_out_penalty,
                 weight=1.0,
                 params={"distance": COMBO_GOAL_DISTANCE, "scale": -10.0},
+            ),
+            "idle": RewardTermCfg(
+                func=idle_penalty,
+                weight=1.0,
+                params={"idle_steps": 75, "min_gain": 0.03, "scale": -0.5},
             ),
             "overspeed": RewardTermCfg(
                 func=overspeed, weight=-0.5, params={"command_name": "twist", "margin": 0.4}
