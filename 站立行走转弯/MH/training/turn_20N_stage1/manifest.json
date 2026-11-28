@@ -1,0 +1,26 @@
+{
+  "mode": "turn",
+  "force_n": 20.0,
+  "duration_s": 0.2,
+  "iterations": 200,
+  "seed": 42,
+  "num_envs": 512,
+  "source_commit": "7f97d153240c22f796c80421e77bf0a86dc0e6f2",
+  "original_checkpoint": "<original-project>\\.cache\\mxz_7f97d153\\source\\站立行走转弯\\mxz\\checkpoints\\model_1795.pt",
+  "original_sha256": "e4bdaa2653842d700a9b03594ba30fd7e01736254071cf19d4339fb7d2f2c9c5",
+  "resume": null,
+  "optimizer_reset": true,
+  "no_push_episode_fraction": 0.25,
+  "motor_limits_nm": {
+    "hip_thigh": 40,
+    "calf": 60,
+    "wheel": 15
+  },
+  "straight_residual_limits": null,
+  "stand_controller": "hybrid outer controller uses original PD; standalone turn-training standing episodes still use the RL actor",
+  "moving_command_sampling": "source turn-locked uniform yaw commands with deadzone; original standing fraction",
+  "actor_observation": "source 53D proprioception; no true linear velocity or force",
+  "notes": "straight: train residual on deterministic base; turn: original actor+critic, wheels zero",
+  "final_sha256": "e41f34603f183602bb2aa383dffe9401be1a54ac05230bf91764ed856212d794",
+  "metadata_correction": "Corrected inactive straight-only descriptive fields; weights, original configuration and snapshot are unchanged."
+}

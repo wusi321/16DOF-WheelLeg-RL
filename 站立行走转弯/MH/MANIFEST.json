@@ -1,0 +1,66 @@
+{
+  "description": "抗干扰训练",
+  "date": "2026-11-29",
+  "directory": "站立行走转弯/MH",
+  "base_commit": "7f97d153240c22f796c80421e77bf0a86dc0e6f2",
+  "repository": "https://github.com/JinHao0007/16DOF-WheelLeg-RL.git",
+  "branch": "beifen",
+  "weights": {
+    "straight": {
+      "path": "checkpoints/straight.pt",
+      "sha256": "a19d84a7e69207af8988290b2aaa97543250a541ff90028c6cc8924f20a0755f"
+    },
+    "turn": {
+      "path": "checkpoints/turn.pt",
+      "sha256": "09814cad9b0f5adb1b66234f29c3d0f5997b5cf8afb88680158c6289d48cedfe"
+    },
+    "original_turn": {
+      "path": "vendor/mxz/checkpoints/model_1795.pt",
+      "sha256": "e4bdaa2653842d700a9b03594ba30fd7e01736254071cf19d4339fb7d2f2c9c5"
+    }
+  },
+  "iterations": {
+    "straight": 500,
+    "turn": 500
+  },
+  "force_training": "20N only, horizontal 8 directions, .2s; curriculum held until acceptance",
+  "evaluation": {
+    "segments": 2304,
+    "push_events": 6822,
+    "forces_n": [
+      0,
+      20,
+      40,
+      60
+    ],
+    "duration_s": 0.2,
+    "terrain": "MuJoCo infinite plane",
+    "main_acceptance_n": [
+      20,
+      40
+    ]
+  },
+  "zero": "zero-45-90-v1",
+  "limits": "calf-1.21-2.7-v1",
+  "motor_limits_nm": {
+    "hip_thigh": 40,
+    "calf": 60,
+    "wheel": 15
+  },
+  "portable_changes": [
+    "Runtime source moved into vendor; only referenced MJCF meshes included",
+    "Relative checkpoint selection, folder-local caches, vendored tested mjlab source",
+    "mjlab installation metadata mujoco-warp pin aligned from >=3.8.0.3 to the actually tested 3.8.0.2 wheel",
+    "On Windows non-ASCII MH paths use same-repository ASCII .cache/MH; no C-drive caches"
+  ],
+  "historical_snapshots": "training/*/mxz_robust_snapshot.py and results/provenance/* are records; launch tools/mxz_robust.py",
+  "runtime_validation": {
+    "headless_control_steps": 1500,
+    "simulated_seconds": 30,
+    "push_n": 40,
+    "exit_code": 0,
+    "falls": 0,
+    "code_and_assets": "bundled vendor directories",
+    "dependency_environment": "existing matching Python3.12 CUDA environment"
+  }
+}

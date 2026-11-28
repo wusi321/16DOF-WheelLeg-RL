@@ -1,0 +1,14 @@
+# Python 3.12, Windows/Linux x64, NVIDIA GPU; install torch CUDA first.
+torch==2.11.0
+mujoco==3.8.1
+mujoco-warp==3.8.0.2
+warp-lang==1.12.1
+rsl-rl-lib==5.4.0
+numpy==2.4.4
+viser==1.0.29
+tensordict==0.12.2
+tensorboard==2.20.0
+matplotlib==3.10.9
+imageio==2.37.3
+imageio-ffmpeg==0.6.0
+pillow==12.2.0

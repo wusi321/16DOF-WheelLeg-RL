@@ -1,0 +1,20 @@
+{
+  "straight": "checkpoints/straight.pt",
+  "turn": "checkpoints/turn.pt",
+  "artifacts": {
+    "straight": {
+      "path": "checkpoints/straight.pt",
+      "sha256": "a19d84a7e69207af8988290b2aaa97543250a541ff90028c6cc8924f20a0755f"
+    },
+    "turn": {
+      "path": "checkpoints/turn.pt",
+      "sha256": "09814cad9b0f5adb1b66234f29c3d0f5997b5cf8afb88680158c6289d48cedfe"
+    },
+    "original_turn": {
+      "path": "vendor/mxz/checkpoints/model_1795.pt",
+      "sha256": "e4bdaa2653842d700a9b03594ba30fd7e01736254071cf19d4339fb7d2f2c9c5"
+    }
+  },
+  "status": "抗干扰训练：20/40N simulated acceptance passed",
+  "evaluation": "results/final/results.json"
+}

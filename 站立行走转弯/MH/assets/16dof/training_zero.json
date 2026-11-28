@@ -1,0 +1,37 @@
+{
+  "version": "zero-45-90-v1",
+  "units": "radians",
+  "limits_version": "calf-1.21-2.7-v1",
+  "calf_limits_rad": {
+    "FR_calf_joint": [-2.7, -1.21],
+    "FL_calf_joint": [-2.7, -1.21],
+    "RL_calf_joint": [1.21, 2.7],
+    "RR_calf_joint": [1.21, 2.7]
+  },
+  "base_height_m": 0.33638782957996116,
+  "joint_order": [
+    "FR_hip_joint", "FR_thigh_joint", "FR_calf_joint",
+    "FL_hip_joint", "FL_thigh_joint", "FL_calf_joint",
+    "RL_hip_joint", "RL_thigh_joint", "RL_calf_joint",
+    "RR_hip_joint", "RR_thigh_joint", "RR_calf_joint"
+  ],
+  "joint_reference_rad": {
+    "FR_hip_joint": 0.0,
+    "FR_thigh_joint": 0.7853981633974483,
+    "FR_calf_joint": -1.5707963267948966,
+    "FL_hip_joint": 0.0,
+    "FL_thigh_joint": 0.7853981633974483,
+    "FL_calf_joint": -1.5707963267948966,
+    "RL_hip_joint": 0.0,
+    "RL_thigh_joint": -0.7853981633974483,
+    "RL_calf_joint": 1.5707963267948966,
+    "RR_hip_joint": 0.0,
+    "RR_thigh_joint": -0.7853981633974483,
+    "RR_calf_joint": 1.5707963267948966
+  },
+  "position_observation": "q_model - q_reference",
+  "position_action": "q_reference + action_scale * filtered_action",
+  "encoder_offsets_calibrated": false,
+  "wheel_reference": "zero speed; wheel angle is not a leg calibration zero",
+  "compatibility": "model_500 requires its original reference AND original 0.9..2.7 calf limits; use its unchanged replay contract or the LegacyV2 task"
+}

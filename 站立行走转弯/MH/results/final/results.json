@@ -1,0 +1,2446 @@
+{
+  "rows": [
+    {
+      "scenario": "forward08",
+      "seed": 42,
+      "force_n": 0.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": null,
+      "push_events": 0,
+      "vx_mae": 0.003894961439073086,
+      "nonfinite_frames": 0,
+      "yaw_mae": 3.0417162633966655e-05,
+      "roll_pitch_abs_max_deg": [
+        0.6201469302177429,
+        0.43987661600112915
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.722330927848816,
+        1.7140929698944092
+      ],
+      "calf_target_range": [
+        -1.6459193229675293,
+        1.6476092338562012
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward08",
+      "seed": 42,
+      "force_n": 20.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 128,
+      "vx_mae": 0.005294539034366608,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.0006825614836998284,
+      "roll_pitch_abs_max_deg": [
+        1.0758121013641357,
+        0.4273173213005066
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.732924222946167,
+        1.7238242626190186
+      ],
+      "calf_target_range": [
+        -1.6463690996170044,
+        1.6478192806243896
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward08",
+      "seed": 42,
+      "force_n": 40.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 128,
+      "vx_mae": 0.0070935823023319244,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.0009181590867228806,
+      "roll_pitch_abs_max_deg": [
+        1.6102402210235596,
+        0.513157844543457
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7462900876998901,
+        1.7374037504196167
+      ],
+      "calf_target_range": [
+        -1.646734356880188,
+        1.6478058099746704
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward08",
+      "seed": 42,
+      "force_n": 60.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 128,
+      "vx_mae": 0.008935314603149891,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.001170269213616848,
+      "roll_pitch_abs_max_deg": [
+        2.1986567974090576,
+        0.7087814807891846
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.762972116470337,
+        1.7533776760101318
+      ],
+      "calf_target_range": [
+        -1.6471644639968872,
+        1.647781252861023
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward08",
+      "seed": 43,
+      "force_n": 0.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": null,
+      "push_events": 0,
+      "vx_mae": 0.0038970718160271645,
+      "nonfinite_frames": 0,
+      "yaw_mae": 2.4103912437567487e-05,
+      "roll_pitch_abs_max_deg": [
+        0.6201454401016235,
+        0.43130049109458923
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7223316431045532,
+        1.7141989469528198
+      ],
+      "calf_target_range": [
+        -1.6459252834320068,
+        1.6479947566986084
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward08",
+      "seed": 43,
+      "force_n": 20.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 126,
+      "vx_mae": 0.005346817895770073,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.0006508781225420535,
+      "roll_pitch_abs_max_deg": [
+        1.074301838874817,
+        0.4264076054096222
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7328619956970215,
+        1.7238742113113403
+      ],
+      "calf_target_range": [
+        -1.6463623046875,
+        1.648000955581665
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward08",
+      "seed": 43,
+      "force_n": 40.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 126,
+      "vx_mae": 0.007104423362761736,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.00088741653598845,
+      "roll_pitch_abs_max_deg": [
+        1.6102614402770996,
+        0.5039628148078918
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7461146116256714,
+        1.7375832796096802
+      ],
+      "calf_target_range": [
+        -1.646730661392212,
+        1.6480605602264404
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward08",
+      "seed": 43,
+      "force_n": 60.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 126,
+      "vx_mae": 0.009000448510050774,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.0011608835775405169,
+      "roll_pitch_abs_max_deg": [
+        2.1961238384246826,
+        0.7118465900421143
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7631226778030396,
+        1.753263235092163
+      ],
+      "calf_target_range": [
+        -1.6471662521362305,
+        1.648047924041748
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward08",
+      "seed": 44,
+      "force_n": 0.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": null,
+      "push_events": 0,
+      "vx_mae": 0.003897045971825719,
+      "nonfinite_frames": 0,
+      "yaw_mae": 3.100764661212452e-05,
+      "roll_pitch_abs_max_deg": [
+        0.6201468110084534,
+        0.4249784052371979
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7224650382995605,
+        1.7142000198364258
+      ],
+      "calf_target_range": [
+        -1.6459331512451172,
+        1.6479521989822388
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward08",
+      "seed": 44,
+      "force_n": 20.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 125,
+      "vx_mae": 0.005407815333455801,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.0006336977239698172,
+      "roll_pitch_abs_max_deg": [
+        1.07221519947052,
+        0.4314686954021454
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7328195571899414,
+        1.7239056825637817
+      ],
+      "calf_target_range": [
+        -1.6463549137115479,
+        1.648067593574524
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward08",
+      "seed": 44,
+      "force_n": 40.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 125,
+      "vx_mae": 0.007293401286005974,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.0008386348490603268,
+      "roll_pitch_abs_max_deg": [
+        1.6073944568634033,
+        0.5127733945846558
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7462786436080933,
+        1.7375329732894897
+      ],
+      "calf_target_range": [
+        -1.6468256711959839,
+        1.6477277278900146
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward08",
+      "seed": 44,
+      "force_n": 60.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 125,
+      "vx_mae": 0.009229042567312717,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.0010907265823334455,
+      "roll_pitch_abs_max_deg": [
+        2.1980140209198,
+        0.700297474861145
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.763037085533142,
+        1.7530356645584106
+      ],
+      "calf_target_range": [
+        -1.6471508741378784,
+        1.647962212562561
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward04",
+      "seed": 42,
+      "force_n": 0.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": null,
+      "push_events": 0,
+      "vx_mae": 0.0009593552676960826,
+      "nonfinite_frames": 0,
+      "yaw_mae": 2.459897041262593e-05,
+      "roll_pitch_abs_max_deg": [
+        0.19580774009227753,
+        0.35030320286750793
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7056344747543335,
+        1.6860733032226562
+      ],
+      "calf_target_range": [
+        -1.6315487623214722,
+        1.6352922916412354
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward04",
+      "seed": 42,
+      "force_n": 20.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 128,
+      "vx_mae": 0.0028219432570040226,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.000372183887520805,
+      "roll_pitch_abs_max_deg": [
+        0.5130164623260498,
+        0.5293433666229248
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7152706384658813,
+        1.695387363433838
+      ],
+      "calf_target_range": [
+        -1.6315467357635498,
+        1.6350672245025635
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward04",
+      "seed": 42,
+      "force_n": 40.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 128,
+      "vx_mae": 0.00494004599750042,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.0008433196926489472,
+      "roll_pitch_abs_max_deg": [
+        0.9693725109100342,
+        0.7150927186012268
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7261137962341309,
+        1.7063534259796143
+      ],
+      "calf_target_range": [
+        -1.6314690113067627,
+        1.6352040767669678
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward04",
+      "seed": 42,
+      "force_n": 60.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 128,
+      "vx_mae": 0.00702919764444232,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.0012943012407049537,
+      "roll_pitch_abs_max_deg": [
+        1.473910927772522,
+        0.895934522151947
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7376092672348022,
+        1.7221622467041016
+      ],
+      "calf_target_range": [
+        -1.6315076351165771,
+        1.6352744102478027
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward04",
+      "seed": 43,
+      "force_n": 0.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": null,
+      "push_events": 0,
+      "vx_mae": 0.0009586923406459391,
+      "nonfinite_frames": 0,
+      "yaw_mae": 2.518980545573868e-05,
+      "roll_pitch_abs_max_deg": [
+        0.2483176738023758,
+        0.33894839882850647
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7056299448013306,
+        1.68606698513031
+      ],
+      "calf_target_range": [
+        -1.6277462244033813,
+        1.6225732564926147
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward04",
+      "seed": 43,
+      "force_n": 20.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 126,
+      "vx_mae": 0.002897513099014759,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.00036207522498443723,
+      "roll_pitch_abs_max_deg": [
+        0.5081836581230164,
+        0.5165570378303528
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7153490781784058,
+        1.6954846382141113
+      ],
+      "calf_target_range": [
+        -1.6283714771270752,
+        1.6226015090942383
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward04",
+      "seed": 43,
+      "force_n": 40.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 126,
+      "vx_mae": 0.004947320558130741,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.0008570929639972746,
+      "roll_pitch_abs_max_deg": [
+        0.9678062796592712,
+        0.7040025591850281
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7260267734527588,
+        1.7064553499221802
+      ],
+      "calf_target_range": [
+        -1.6290274858474731,
+        1.6227960586547852
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward04",
+      "seed": 43,
+      "force_n": 60.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 126,
+      "vx_mae": 0.00710093742236495,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.0012889938661828637,
+      "roll_pitch_abs_max_deg": [
+        1.47027587890625,
+        0.8906198143959045
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7377842664718628,
+        1.7222603559494019
+      ],
+      "calf_target_range": [
+        -1.6296895742416382,
+        1.6227540969848633
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward04",
+      "seed": 44,
+      "force_n": 0.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": null,
+      "push_events": 0,
+      "vx_mae": 0.0009579877951182425,
+      "nonfinite_frames": 0,
+      "yaw_mae": 2.5632938559283502e-05,
+      "roll_pitch_abs_max_deg": [
+        0.2399127036333084,
+        0.339046448469162
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7056291103363037,
+        1.686065673828125
+      ],
+      "calf_target_range": [
+        -1.6277714967727661,
+        1.6222827434539795
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward04",
+      "seed": 44,
+      "force_n": 20.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 125,
+      "vx_mae": 0.0029712310060858727,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.0003327602462377399,
+      "roll_pitch_abs_max_deg": [
+        0.5075486898422241,
+        0.5197930932044983
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7153483629226685,
+        1.6953972578048706
+      ],
+      "calf_target_range": [
+        -1.6283643245697021,
+        1.6227219104766846
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward04",
+      "seed": 44,
+      "force_n": 40.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 125,
+      "vx_mae": 0.005155531689524651,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.0007698442786931992,
+      "roll_pitch_abs_max_deg": [
+        0.9664563536643982,
+        0.7069258689880371
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.726001262664795,
+        1.7062128782272339
+      ],
+      "calf_target_range": [
+        -1.6290262937545776,
+        1.621849775314331
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "forward04",
+      "seed": 44,
+      "force_n": 60.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 125,
+      "vx_mae": 0.007361995056271553,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.0011921752011403441,
+      "roll_pitch_abs_max_deg": [
+        1.4697372913360596,
+        0.8910830616950989
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7377541065216064,
+        1.7222133874893188
+      ],
+      "calf_target_range": [
+        -1.629686713218689,
+        1.6224993467330933
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "stop",
+      "seed": 42,
+      "force_n": 0.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": null,
+      "push_events": 0,
+      "vx_mae": 2.0002257770102005e-06,
+      "nonfinite_frames": 0,
+      "yaw_mae": 2.2696444830216933e-06,
+      "roll_pitch_abs_max_deg": [
+        0.2223968505859375,
+        0.0803413838148117
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.629281759262085,
+        1.631213665008545
+      ],
+      "calf_target_range": [
+        -1.5937469005584717,
+        1.5837651491165161
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "stop",
+      "seed": 42,
+      "force_n": 20.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 128,
+      "vx_mae": 0.002886083209887147,
+      "nonfinite_frames": 0,
+      "yaw_mae": 1.9945751773775555e-05,
+      "roll_pitch_abs_max_deg": [
+        0.3254474699497223,
+        0.09222579002380371
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.6340253353118896,
+        1.6339796781539917
+      ],
+      "calf_target_range": [
+        -1.5937469005584717,
+        1.5837651491165161
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "stop",
+      "seed": 42,
+      "force_n": 40.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 128,
+      "vx_mae": 0.005946474149823189,
+      "nonfinite_frames": 0,
+      "yaw_mae": 8.403725951211527e-05,
+      "roll_pitch_abs_max_deg": [
+        0.6770846843719482,
+        0.1808360069990158
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.6454583406448364,
+        1.6453732252120972
+      ],
+      "calf_target_range": [
+        -1.5937469005584717,
+        1.5837651491165161
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "stop",
+      "seed": 42,
+      "force_n": 60.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 128,
+      "vx_mae": 0.008922998793423176,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.00012851497740484774,
+      "roll_pitch_abs_max_deg": [
+        1.06879460811615,
+        0.26363566517829895
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.6600499153137207,
+        1.6601701974868774
+      ],
+      "calf_target_range": [
+        -1.5937469005584717,
+        1.5837651491165161
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "stop",
+      "seed": 43,
+      "force_n": 0.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": null,
+      "push_events": 0,
+      "vx_mae": 3.2594020922260825e-06,
+      "nonfinite_frames": 0,
+      "yaw_mae": 7.903951200205483e-07,
+      "roll_pitch_abs_max_deg": [
+        0.06686075776815414,
+        0.014737394638359547
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.6245229244232178,
+        1.6245924234390259
+      ],
+      "calf_target_range": [
+        -1.5707963705062866,
+        1.5707963705062866
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "stop",
+      "seed": 43,
+      "force_n": 20.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 126,
+      "vx_mae": 0.003002250799909234,
+      "nonfinite_frames": 0,
+      "yaw_mae": 2.1102612663526088e-05,
+      "roll_pitch_abs_max_deg": [
+        0.32464054226875305,
+        0.08695533126592636
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.6340397596359253,
+        1.6341439485549927
+      ],
+      "calf_target_range": [
+        -1.5707963705062866,
+        1.5707963705062866
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "stop",
+      "seed": 43,
+      "force_n": 40.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 126,
+      "vx_mae": 0.005954853259027004,
+      "nonfinite_frames": 0,
+      "yaw_mae": 8.74227553140372e-05,
+      "roll_pitch_abs_max_deg": [
+        0.677819550037384,
+        0.17519421875476837
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.6452853679656982,
+        1.645408272743225
+      ],
+      "calf_target_range": [
+        -1.5707963705062866,
+        1.5707963705062866
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "stop",
+      "seed": 43,
+      "force_n": 60.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 126,
+      "vx_mae": 0.00901815202087164,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.0001366740616504103,
+      "roll_pitch_abs_max_deg": [
+        1.0615893602371216,
+        0.2579052746295929
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.660003900527954,
+        1.6600505113601685
+      ],
+      "calf_target_range": [
+        -1.5707963705062866,
+        1.5707963705062866
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "stop",
+      "seed": 44,
+      "force_n": 0.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": null,
+      "push_events": 0,
+      "vx_mae": 3.2275736430165125e-06,
+      "nonfinite_frames": 0,
+      "yaw_mae": 7.713165359746199e-07,
+      "roll_pitch_abs_max_deg": [
+        0.07299989461898804,
+        0.015592755749821663
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.6245226860046387,
+        1.6245924234390259
+      ],
+      "calf_target_range": [
+        -1.5707963705062866,
+        1.5707963705062866
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "stop",
+      "seed": 44,
+      "force_n": 20.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 125,
+      "vx_mae": 0.003106930525973439,
+      "nonfinite_frames": 0,
+      "yaw_mae": 2.0799394405912608e-05,
+      "roll_pitch_abs_max_deg": [
+        0.3208805024623871,
+        0.08687197417020798
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.6339877843856812,
+        1.6341323852539062
+      ],
+      "calf_target_range": [
+        -1.5707963705062866,
+        1.5707963705062866
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "stop",
+      "seed": 44,
+      "force_n": 40.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 125,
+      "vx_mae": 0.006262452807277441,
+      "nonfinite_frames": 0,
+      "yaw_mae": 8.37055777083151e-05,
+      "roll_pitch_abs_max_deg": [
+        0.6787214875221252,
+        0.17512015998363495
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.6453781127929688,
+        1.6454722881317139
+      ],
+      "calf_target_range": [
+        -1.5707963705062866,
+        1.5707963705062866
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "stop",
+      "seed": 44,
+      "force_n": 60.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 125,
+      "vx_mae": 0.009383244439959526,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.00013419362949207425,
+      "roll_pitch_abs_max_deg": [
+        1.0634604692459106,
+        0.2577158510684967
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.6598879098892212,
+        1.6600481271743774
+      ],
+      "calf_target_range": [
+        -1.5707963705062866,
+        1.5707963705062866
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/combined_500_200_plane_eval/results.json"
+    },
+    {
+      "scenario": "right",
+      "seed": 42,
+      "force_n": 0.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": null,
+      "push_events": 0,
+      "vx_mae": 0.00926707498729229,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.02440444566309452,
+      "roll_pitch_abs_max_deg": [
+        1.9598387479782104,
+        2.5710363388061523
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.6920500993728638,
+        1.686714768409729
+      ],
+      "calf_target_range": [
+        -1.714522123336792,
+        1.7248221635818481
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "right",
+      "seed": 42,
+      "force_n": 20.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 128,
+      "vx_mae": 0.014104422181844711,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.028440503403544426,
+      "roll_pitch_abs_max_deg": [
+        4.156313419342041,
+        4.512267112731934
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7110154628753662,
+        1.6878337860107422
+      ],
+      "calf_target_range": [
+        -1.7168680429458618,
+        1.7361668348312378
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "right",
+      "seed": 42,
+      "force_n": 40.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 128,
+      "vx_mae": 0.01911551132798195,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.03499238193035126,
+      "roll_pitch_abs_max_deg": [
+        5.393032073974609,
+        5.829514503479004
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7483320236206055,
+        1.695242166519165
+      ],
+      "calf_target_range": [
+        -1.7533063888549805,
+        1.7398912906646729
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "right",
+      "seed": 42,
+      "force_n": 60.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 128,
+      "vx_mae": 0.0234305951744318,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.04184677451848984,
+      "roll_pitch_abs_max_deg": [
+        7.322323322296143,
+        6.674380779266357
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.781294822692871,
+        1.7207469940185547
+      ],
+      "calf_target_range": [
+        -1.781468152999878,
+        1.7422363758087158
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "right",
+      "seed": 43,
+      "force_n": 0.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": null,
+      "push_events": 0,
+      "vx_mae": 0.008825834840536118,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.024261420592665672,
+      "roll_pitch_abs_max_deg": [
+        1.9623668193817139,
+        2.5766050815582275
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.6936620473861694,
+        1.6868401765823364
+      ],
+      "calf_target_range": [
+        -1.7156685590744019,
+        1.7247580289840698
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "right",
+      "seed": 43,
+      "force_n": 20.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 126,
+      "vx_mae": 0.014150186441838741,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.027683893218636513,
+      "roll_pitch_abs_max_deg": [
+        4.124013900756836,
+        4.958134174346924
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7050316333770752,
+        1.6876477003097534
+      ],
+      "calf_target_range": [
+        -1.7205954790115356,
+        1.7370330095291138
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "right",
+      "seed": 43,
+      "force_n": 40.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 126,
+      "vx_mae": 0.019366027787327766,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.03408544138073921,
+      "roll_pitch_abs_max_deg": [
+        5.504213809967041,
+        5.996714115142822
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7582314014434814,
+        1.696533203125
+      ],
+      "calf_target_range": [
+        -1.7654396295547485,
+        1.7347185611724854
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "right",
+      "seed": 43,
+      "force_n": 60.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 126,
+      "vx_mae": 0.023331446573138237,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.04198186472058296,
+      "roll_pitch_abs_max_deg": [
+        7.20443868637085,
+        6.9727606773376465
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7695726156234741,
+        1.7182669639587402
+      ],
+      "calf_target_range": [
+        -1.775707721710205,
+        1.7433686256408691
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "right",
+      "seed": 44,
+      "force_n": 0.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": null,
+      "push_events": 0,
+      "vx_mae": 0.00868393387645483,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.023762792348861694,
+      "roll_pitch_abs_max_deg": [
+        1.9738490581512451,
+        2.6099343299865723
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.6935828924179077,
+        1.6866475343704224
+      ],
+      "calf_target_range": [
+        -1.7155627012252808,
+        1.7246603965759277
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "right",
+      "seed": 44,
+      "force_n": 20.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 125,
+      "vx_mae": 0.014289227314293385,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.028065862134099007,
+      "roll_pitch_abs_max_deg": [
+        4.129114627838135,
+        4.748055934906006
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7052286863327026,
+        1.6914880275726318
+      ],
+      "calf_target_range": [
+        -1.719146490097046,
+        1.7353994846343994
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "right",
+      "seed": 44,
+      "force_n": 40.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 125,
+      "vx_mae": 0.019345702603459358,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.03537863865494728,
+      "roll_pitch_abs_max_deg": [
+        5.599020004272461,
+        5.946168899536133
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.752134919166565,
+        1.697066307067871
+      ],
+      "calf_target_range": [
+        -1.7516083717346191,
+        1.7340233325958252
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "right",
+      "seed": 44,
+      "force_n": 60.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 125,
+      "vx_mae": 0.02309700846672058,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.041699737310409546,
+      "roll_pitch_abs_max_deg": [
+        7.096450328826904,
+        6.586993217468262
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7684900760650635,
+        1.7184544801712036
+      ],
+      "calf_target_range": [
+        -1.7700904607772827,
+        1.7428227663040161
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "left",
+      "seed": 42,
+      "force_n": 0.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": null,
+      "push_events": 0,
+      "vx_mae": 0.008485007099807262,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.034406598657369614,
+      "roll_pitch_abs_max_deg": [
+        2.6185154914855957,
+        3.032391309738159
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.6936848163604736,
+        1.7265857458114624
+      ],
+      "calf_target_range": [
+        -1.719009518623352,
+        1.735626220703125
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "left",
+      "seed": 42,
+      "force_n": 20.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 128,
+      "vx_mae": 0.014668402262032032,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.03455336019396782,
+      "roll_pitch_abs_max_deg": [
+        4.961353778839111,
+        5.673549652099609
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7011641263961792,
+        1.7269034385681152
+      ],
+      "calf_target_range": [
+        -1.7269847393035889,
+        1.7365319728851318
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "left",
+      "seed": 42,
+      "force_n": 40.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 128,
+      "vx_mae": 0.019559573382139206,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.03850479796528816,
+      "roll_pitch_abs_max_deg": [
+        6.530277252197266,
+        6.5769734382629395
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7246286869049072,
+        1.729044795036316
+      ],
+      "calf_target_range": [
+        -1.7571402788162231,
+        1.748227596282959
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "left",
+      "seed": 42,
+      "force_n": 60.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 128,
+      "vx_mae": 0.02487924136221409,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.04157450795173645,
+      "roll_pitch_abs_max_deg": [
+        7.490651607513428,
+        7.636081218719482
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7456327676773071,
+        1.7423831224441528
+      ],
+      "calf_target_range": [
+        -1.77321457862854,
+        1.7701923847198486
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "left",
+      "seed": 43,
+      "force_n": 0.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": null,
+      "push_events": 0,
+      "vx_mae": 0.008414831943809986,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.031915925443172455,
+      "roll_pitch_abs_max_deg": [
+        2.6570754051208496,
+        3.0508453845977783
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.6718559265136719,
+        1.7079613208770752
+      ],
+      "calf_target_range": [
+        -1.6994848251342773,
+        1.7257449626922607
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "left",
+      "seed": 43,
+      "force_n": 20.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 126,
+      "vx_mae": 0.013862518593668938,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.0328066311776638,
+      "roll_pitch_abs_max_deg": [
+        4.810739994049072,
+        5.862329006195068
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7005659341812134,
+        1.7076457738876343
+      ],
+      "calf_target_range": [
+        -1.7207199335098267,
+        1.7254114151000977
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "left",
+      "seed": 43,
+      "force_n": 40.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 126,
+      "vx_mae": 0.019359810277819633,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.03986910358071327,
+      "roll_pitch_abs_max_deg": [
+        6.278088569641113,
+        6.532535552978516
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7198457717895508,
+        1.7201004028320312
+      ],
+      "calf_target_range": [
+        -1.748203158378601,
+        1.747899055480957
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "left",
+      "seed": 43,
+      "force_n": 60.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 126,
+      "vx_mae": 0.02361864410340786,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.04484002664685249,
+      "roll_pitch_abs_max_deg": [
+        6.930887222290039,
+        7.711306095123291
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.746037244796753,
+        1.7396979331970215
+      ],
+      "calf_target_range": [
+        -1.7776634693145752,
+        1.7613967657089233
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "left",
+      "seed": 44,
+      "force_n": 0.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": null,
+      "push_events": 0,
+      "vx_mae": 0.008113333024084568,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.030469588935375214,
+      "roll_pitch_abs_max_deg": [
+        2.742304563522339,
+        3.0583527088165283
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.6719591617584229,
+        1.7081944942474365
+      ],
+      "calf_target_range": [
+        -1.7002990245819092,
+        1.7253884077072144
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "left",
+      "seed": 44,
+      "force_n": 20.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 125,
+      "vx_mae": 0.01370256021618843,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.033590588718652725,
+      "roll_pitch_abs_max_deg": [
+        4.7720627784729,
+        5.655673503875732
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7017228603363037,
+        1.7076433897018433
+      ],
+      "calf_target_range": [
+        -1.722416877746582,
+        1.7257041931152344
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "left",
+      "seed": 44,
+      "force_n": 40.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 125,
+      "vx_mae": 0.019700290635228157,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.0396321639418602,
+      "roll_pitch_abs_max_deg": [
+        6.363302230834961,
+        6.461097240447998
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7224998474121094,
+        1.7277300357818604
+      ],
+      "calf_target_range": [
+        -1.7521724700927734,
+        1.7503666877746582
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "left",
+      "seed": 44,
+      "force_n": 60.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 125,
+      "vx_mae": 0.02339368686079979,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.04614007845520973,
+      "roll_pitch_abs_max_deg": [
+        7.419336795806885,
+        7.736108303070068
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7547783851623535,
+        1.743058443069458
+      ],
+      "calf_target_range": [
+        -1.785766839981079,
+        1.7648327350616455
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "switch",
+      "seed": 42,
+      "force_n": 0.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": null,
+      "push_events": 0,
+      "vx_mae": 0.005255992989987135,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.014538860879838467,
+      "roll_pitch_abs_max_deg": [
+        3.4676311016082764,
+        3.2383477687835693
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.758037805557251,
+        1.7289910316467285
+      ],
+      "calf_target_range": [
+        -1.7597851753234863,
+        1.7264341115951538
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "switch",
+      "seed": 42,
+      "force_n": 20.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 128,
+      "vx_mae": 0.00826718658208847,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.014922232367098331,
+      "roll_pitch_abs_max_deg": [
+        4.072964191436768,
+        5.080099105834961
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.762774109840393,
+        1.7336125373840332
+      ],
+      "calf_target_range": [
+        -1.762040615081787,
+        1.7277151346206665
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "switch",
+      "seed": 42,
+      "force_n": 40.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 128,
+      "vx_mae": 0.011498930864036083,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.01795269548892975,
+      "roll_pitch_abs_max_deg": [
+        6.146426200866699,
+        6.144203186035156
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7625981569290161,
+        1.7383671998977661
+      ],
+      "calf_target_range": [
+        -1.7675312757492065,
+        1.7392404079437256
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "switch",
+      "seed": 42,
+      "force_n": 60.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 128,
+      "vx_mae": 0.01369434129446745,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.018397245556116104,
+      "roll_pitch_abs_max_deg": [
+        7.648012638092041,
+        6.578556060791016
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7637995481491089,
+        1.7592252492904663
+      ],
+      "calf_target_range": [
+        -1.7752089500427246,
+        1.7434680461883545
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "switch",
+      "seed": 43,
+      "force_n": 0.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": null,
+      "push_events": 0,
+      "vx_mae": 0.005212733987718821,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.013997822999954224,
+      "roll_pitch_abs_max_deg": [
+        3.4977805614471436,
+        3.2072641849517822
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7580643892288208,
+        1.731162667274475
+      ],
+      "calf_target_range": [
+        -1.7597324848175049,
+        1.7248830795288086
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "switch",
+      "seed": 43,
+      "force_n": 20.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 126,
+      "vx_mae": 0.008559937588870525,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.014828085899353027,
+      "roll_pitch_abs_max_deg": [
+        5.096646308898926,
+        5.848851203918457
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7585530281066895,
+        1.7523757219314575
+      ],
+      "calf_target_range": [
+        -1.7616527080535889,
+        1.7316515445709229
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "switch",
+      "seed": 43,
+      "force_n": 40.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 126,
+      "vx_mae": 0.011451506987214088,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.017720961943268776,
+      "roll_pitch_abs_max_deg": [
+        6.144577503204346,
+        6.6363525390625
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7585276365280151,
+        1.7564529180526733
+      ],
+      "calf_target_range": [
+        -1.759749174118042,
+        1.7415049076080322
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "switch",
+      "seed": 43,
+      "force_n": 60.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 126,
+      "vx_mae": 0.014461081475019455,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.020200202241539955,
+      "roll_pitch_abs_max_deg": [
+        7.281066417694092,
+        7.0539703369140625
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7725117206573486,
+        1.7529222965240479
+      ],
+      "calf_target_range": [
+        -1.7678008079528809,
+        1.7423855066299438
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "switch",
+      "seed": 44,
+      "force_n": 0.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": null,
+      "push_events": 0,
+      "vx_mae": 0.00516878254711628,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.013656812720000744,
+      "roll_pitch_abs_max_deg": [
+        3.452129602432251,
+        3.0008978843688965
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7580153942108154,
+        1.7257455587387085
+      ],
+      "calf_target_range": [
+        -1.7596888542175293,
+        1.7258626222610474
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "switch",
+      "seed": 44,
+      "force_n": 20.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 125,
+      "vx_mae": 0.008862684480845928,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.015102546662092209,
+      "roll_pitch_abs_max_deg": [
+        4.281825065612793,
+        5.750107765197754
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7586688995361328,
+        1.74900484085083
+      ],
+      "calf_target_range": [
+        -1.7623131275177002,
+        1.7391220331192017
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "switch",
+      "seed": 44,
+      "force_n": 40.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 125,
+      "vx_mae": 0.011739811860024929,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.017948351800441742,
+      "roll_pitch_abs_max_deg": [
+        5.729862213134766,
+        5.4709367752075195
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7578948736190796,
+        1.7537072896957397
+      ],
+      "calf_target_range": [
+        -1.7629317045211792,
+        1.7365014553070068
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    },
+    {
+      "scenario": "switch",
+      "seed": 44,
+      "force_n": 60.0,
+      "envs": 32,
+      "steps": 1500,
+      "episode_success_rate": 1.0,
+      "recovery_rate": 1.0,
+      "push_events": 125,
+      "vx_mae": 0.014920107088983059,
+      "nonfinite_frames": 0,
+      "yaw_mae": 0.020963119342923164,
+      "roll_pitch_abs_max_deg": [
+        6.741023540496826,
+        7.2478532791137695
+      ],
+      "max_calf_penetration_rad": 0.0,
+      "calf_actual_range": [
+        -1.7722009420394897,
+        1.7585598230361938
+      ],
+      "calf_target_range": [
+        -1.7759698629379272,
+        1.7462828159332275
+      ],
+      "termination_counts": {
+        "time_out": 0,
+        "bad_orientation": 0,
+        "base_ground_contact": 0,
+        "nan_detection": 0
+      },
+      "origin_results": "results/provenance/turn_500_plane_eval/results.json"
+    }
+  ],
+  "limits": [
+    {
+      "joint": "FR_calf_joint",
+      "physical_range": [
+        -2.7,
+        -1.21
+      ],
+      "target_range": [
+        -2.7,
+        -1.21
+      ]
+    },
+    {
+      "joint": "FL_calf_joint",
+      "physical_range": [
+        -2.7,
+        -1.21
+      ],
+      "target_range": [
+        -2.7,
+        -1.21
+      ]
+    },
+    {
+      "joint": "RL_calf_joint",
+      "physical_range": [
+        1.21,
+        2.7
+      ],
+      "target_range": [
+        1.21,
+        2.7
+      ]
+    },
+    {
+      "joint": "RR_calf_joint",
+      "physical_range": [
+        1.21,
+        2.7
+      ],
+      "target_range": [
+        1.21,
+        2.7
+      ]
+    }
+  ],
+  "checkpoint_sha256": "e4bdaa2653842d700a9b03594ba30fd7e01736254071cf19d4339fb7d2f2c9c5",
+  "straight": "checkpoints/straight.pt",
+  "turn": "checkpoints/turn.pt",
+  "evaluated_weight_sha256": {
+    "straight": "a19d84a7e69207af8988290b2aaa97543250a541ff90028c6cc8924f20a0755f",
+    "turn": "09814cad9b0f5adb1b66234f29c3d0f5997b5cf8afb88680158c6289d48cedfe"
+  },
+  "dt": 0.02,
+  "force_duration_s": 0.2,
+  "force_frame": "world horizontal",
+  "terrain": "MuJoCo infinite plane",
+  "application_point": "base COM + body z * 0.08m",
+  "failed_episodes_remain_failed": true,
+  "compositional_evaluation": {
+    "straight_trials": "results/provenance/combined_500_200_plane_eval/results.json",
+    "turn_and_switch_trials": "results/provenance/turn_500_plane_eval/results.json",
+    "reason": "Only the turn network changed; pure straight/stand never invoke it. All mode-switch trials were rerun with both final networks.",
+    "checks": "same straight checkpoint with training SHA256; same inference and force AST; same terrain, dt, forces, original checkpoint; unique complete matrix"
+  },
+  "delivery_note": "Runtime paths relocated; evaluated checkpoint bytes are identical to the original acceptance weights."
+}
