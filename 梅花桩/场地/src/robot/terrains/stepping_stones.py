@@ -1,0 +1,284 @@
+"""梅花桩（stepping-stone）地形，对应 Robocon2027.xml 里的 stepping_stones 段。
+
+实场地形（`Robocon2027.xml`）：
+
+    stepping_stones_01_00..05   size = 0.1 0.1 0.1（即 0.20 x 0.20 x 0.20 m）
+    z 中心 0.10 -> 顶面 0.20 m
+    两条桩列：y = 2.2 / 1.8（横向中心距 0.40 m）
+    同列前后中心距 0.60 m，两条桩列在 x 方向错开 0.30 m
+
+轮距 0.385 m ≈ 桩列间距 0.40 m，所以实车的左右轮分别落在两条桩列上；
+0.60 m 的中心距大于轴距 0.387 m，必须靠抬腿跨越，不能纯滚动通过。
+
+训练用地形把这一布局参数化，难度 d ∈ [0, 1] 沿桩高 / 中心距 / 错位 / 位置噪声 /
+缺失桩逐级放宽（对应 16DOF_RL.md 的六个阶段）：
+
+    d ≈ 0.00 - 0.15  阶段 1：桩高 0.06~0.08 m，中心距 0.30 m，无错位、无噪声
+    d ≈ 0.15 - 0.30  阶段 2：桩高 ~0.10 m，固定布局
+    d ≈ 0.30 - 0.50  阶段 3：桩高升到 0.15 m，中心距/错位小幅随机
+    d ≈ 0.50 - 0.75  阶段 4：桩高到 0.18 m，中心距到 0.55 m，开始少量缺桩
+    d ≈ 0.75 - 1.00  阶段 5：桩高 0.20 m、中心距 0.60 m、错位 0.30 m，
+                     位置噪声 ±0.03 m、缺桩 5%~10% —— 与实场一致
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+
+import mujoco
+import numpy as np
+
+from mjlab.terrains.terrain_generator import SubTerrainCfg, TerrainGeometry, TerrainOutput
+from mjlab.terrains.utils import make_plane
+from mjlab.utils.color import brand_ramp
+
+#: 课程控制点：难度 -> 参数（线性插值）。
+#:
+#: 桩高起点改成 3–5 cm：轮半径只有 8.6 cm，6 cm 的台阶**轮子爬不上去**，必须抬腿，
+#: 而课程第一级就想让策略直接抬腿是不现实的（2026-10-26 的训练就卡在这一步：走到
+#: 桩前不抬腿、直接栽进坑里）。3 cm 左右轮子可以靠扭矩滚上去，先让它学会“上桩”，
+#: 再逐级抬高到赛道的 20 cm。
+_STAGE_DIFFICULTY = np.array([0.00, 0.15, 0.30, 0.50, 0.75, 1.00])
+_HEIGHT_LOW = np.array([0.03, 0.05, 0.08, 0.10, 0.13, 0.15])
+_HEIGHT_HIGH = np.array([0.05, 0.07, 0.10, 0.14, 0.16, 0.17])
+# 2026-10-28（p7 后调整）：6-9 级的 pitch 已被 max_step=0.46 截断（实际 dx 恒为
+# ~0.435 m），等级差异只剩下桩高。原表 7-9 级抬到 0.153-0.20 m（轮半径才 0.086 m），
+# p4-p7 五轮训练地形均值都卡在 6.0-6.1，7 级以上过不去。先把 6-9 级收到 0.12-0.17 m，
+# 让课程能推满 10 级、把"跳 43 cm + 踩 12-17 cm 桩"练稳后再拔高到实场 20 cm。
+# 2026-10-28：最高档中心距从 0.60 收到 0.45（200 mm 桩 -> 净空 0.25 m）。
+# 0.60 时同侧净空 0.40 m，已经超过机器人轴距（0.385 m），只能靠斜跨；
+# 训练 300 迭代仍过不去，所以先把上限压到“轮子能直接跨”的范围。
+# 2026-10-28：恢复实场规格（中心距 0.60 / 错位 0.30）。上一版收到 0.45/0.18 后
+# 同侧净空只剩 0.32 m，策略直接“平推”过去，学不到踩桩；需要更软时用
+# BoxSteppingStonesTerrainCfg.pitch_scale / stagger_scale 缩放，不要改这张表。
+_PITCH = np.array([0.30, 0.32, 0.35, 0.45, 0.55, 0.60])
+_STAGGER = np.array([0.00, 0.05, 0.10, 0.20, 0.26, 0.30])
+_NOISE = np.array([0.00, 0.00, 0.01, 0.02, 0.025, 0.030])
+#: 平台与首/末排桩之间的净空（边到边）。赛事里平台与方块都是 200 mm、顶面齐平，
+#: 真正要跨越的是这个 gap；它必须显式控制，否则随 pitch 变化会被拉到 20 cm 以上，
+#: 机器人从最后一排桩下来时直接掉进坑（2026-10-26 play 里看到的现象）。
+_GAP = np.array([0.05, 0.06, 0.07, 0.09, 0.12, 0.15])
+# 缺桩概率暂时全零：缺一根会让同侧相邻两跳变成 2*pitch（最高 1.1 m），
+# 机器人没有支撑必然摔（2026-10-28 play 第 4 张图）。难度改由
+# 桩高 / 中心距 / 错位 / 净空承担，等策略能稳定通过再逐步放开。
+_MISSING = np.array([0.00, 0.00, 0.00, 0.00, 0.00, 0.00])
+
+# 外观取自《2027 年足式机器人挑战赛 V1.0》障碍赛「梅花桩」条目：
+# 方块 200x200x200 mm、两侧平台 800x800x200 mm，表面均涂绿色水性漆。
+_STONE_COLOR = (0.13, 0.55, 0.24)  # 绿色水性漆
+_PLATFORM_COLOR = (0.13, 0.55, 0.24, 1.0)
+_GOAL_COLOR = (0.95, 0.55, 0.10, 1.0)
+
+
+@dataclass(kw_only=True)
+class BoxSteppingStonesTerrainCfg(SubTerrainCfg):
+    """两条交错桩列的梅花桩地形。
+
+    每个 patch 沿 +x 方向通过：起点平台 -> 桩区 -> 终点平台。桩区左右各一条桩列，
+    横向中心距默认 0.40 m（与实场一致、约等于轮距）。
+    """
+
+    stone_size: tuple[float, float] = (0.20, 0.20)
+    """桩体平面尺寸 (x, y)，单位 m。"""
+
+    lane_spacing: float = 0.40
+    """左右两条桩列的横向中心距，单位 m。"""
+
+    start_length: float = 0.8
+    """起点平台长度，单位 m。"""
+
+    end_length: float = 0.8
+    """终点平台长度，单位 m。"""
+
+    max_step: float = 0.46
+    """相邻两根桩中心距的上限（m），保证每一步都跨得过去。
+
+    机器人轴距/轮距 0.385 m、轮半径 0.086 m，斜跨的物理上限约 0.46 m。
+    """
+
+    pit_depth: float = 0.6
+    """桩区外侧/桩间地面相对桩顶平台的下沉深度，单位 m。
+
+    0.6 m 时桩间是深坑：掉下去会触发 base_ground_contact / base_too_low 终止，
+    逼策略真正踩在桩上；设为 0.0 则与实场一致（桩立在地面上）。
+    """
+
+    stone_height_range: tuple[float, float] = (0.06, 0.20)
+    """桩高范围，仅用于文档/校验：实际曲线见模块顶部 _HEIGHT_* 控制点。"""
+
+    pitch_range: tuple[float, float] = (0.30, 0.60)
+    """前后中心距范围，仅用于文档/校验（实际曲线见 _PITCH）。"""
+
+    stagger_range: tuple[float, float] = (0.0, 0.30)
+    """两条桩列的 x 向错位范围，仅用于文档/校验（实际曲线见 _STAGGER）。"""
+
+    position_noise_range: tuple[float, float] = (0.0, 0.03)
+    """单桩位置扰动范围，仅用于文档/校验（实际曲线见 _NOISE）。"""
+
+    missing_prob_range: tuple[float, float] = (0.0, 0.10)
+    """单桩缺失概率范围，仅用于文档/校验（实际曲线见 _MISSING）。"""
+
+    edge_gap_range: tuple[float, float] = (0.05, 0.15)
+    """平台与首/末排桩的净空范围，仅用于文档/校验（实际曲线见 _GAP）。"""
+
+    pitch_scale: float = 1.0
+    """中心距整体缩放（1.0 = 实场规格 0.60 m；0.75 约等于净空 0.25 m）。
+
+    间距太小（净空 < 0.25 m）策略会“平推”过去，学不到踩桩；太大（> 0.35 m）
+    又会被轴距卡住。命令行可以直接调：
+    ``--env.scene.terrain.terrain-generator.sub-terrains.box_stepping_stones.pitch-scale 0.8``
+    """
+
+    stagger_scale: float = 1.0
+    """两列错位整体缩放（1.0 = 实场 0.30 m）。错位越小越容易“直着走平推开”。"""
+
+    #: 每次生成递增，用于给桩体 geom 起唯一名字（``stepstone_<n>``）。
+    #: 名字是运行时恢复"哪根桩被踩过"的唯一依据，见 mdp/stone_coverage.py。
+    _stone_counter: int = field(default=0, init=False, repr=False)
+
+    # -- 内部工具 -----------------------------------------------------------
+    def _params(self, difficulty: float) -> dict[str, float]:
+        d = float(np.clip(difficulty, 0.0, 1.0))
+        return {
+            "height_low": float(np.interp(d, _STAGE_DIFFICULTY, _HEIGHT_LOW)),
+            "height_high": float(np.interp(d, _STAGE_DIFFICULTY, _HEIGHT_HIGH)),
+            "pitch": float(np.interp(d, _STAGE_DIFFICULTY, _PITCH)),
+            "stagger": float(np.interp(d, _STAGE_DIFFICULTY, _STAGGER)),
+            "noise": float(np.interp(d, _STAGE_DIFFICULTY, _NOISE)),
+            "missing": float(np.interp(d, _STAGE_DIFFICULTY, _MISSING)),
+            "gap": float(np.interp(d, _STAGE_DIFFICULTY, _GAP)),
+        }
+
+    @staticmethod
+    def stage_of(difficulty: float) -> int:
+        """把难度映射成 1..5 的阶段编号（用于日志/调试）。"""
+        d = float(np.clip(difficulty, 0.0, 1.0))
+        if d < 0.15:
+            return 1
+        if d < 0.30:
+            return 2
+        if d < 0.50:
+            return 3
+        if d < 0.75:
+            return 4
+        return 5
+
+    # -- 生成 ---------------------------------------------------------------
+    def function(
+        self,
+        difficulty: float,
+        spec: mujoco.MjSpec,
+        rng: np.random.Generator,
+    ) -> TerrainOutput:
+        body = spec.body("terrain")
+        geometries: list[TerrainGeometry] = []
+
+        sx, sy = self.size
+        cy = sy / 2.0
+        p = self._params(difficulty)
+        half_x, half_y = self.stone_size[0] / 2.0, self.stone_size[1] / 2.0
+
+        # 1) 桩区地面：默认做成深坑，避免策略从地面绕过去
+        if self.pit_depth > 0.0:
+            floor = body.add_geom(
+                type=mujoco.mjtGeom.mjGEOM_BOX,
+                size=(sx / 2.0, sy / 2.0, 0.05),
+                pos=(sx / 2.0, cy, -self.pit_depth - 0.05),
+            )
+            geometries.append(TerrainGeometry(geom=floor, color=(0.18, 0.18, 0.20, 1.0)))
+        else:
+            for box in make_plane(body, self.size, 0.0, center_zero=False):
+                geometries.append(TerrainGeometry(geom=box, color=(0.35, 0.35, 0.35, 1.0)))
+
+        # 2) 起点 / 终点平台：顶面与桩顶**同高**。
+        # 赛事里平台和方块都是 200 mm 高、顶面齐平；旧版把平台顶面放在 z=0、桩顶在
+        # 3–20 cm，机器人从最后一排桩下来要“跨 20 cm 空 + 下 20 cm 台阶”，必然掉坑
+        # （2026-10-26 play 里全卡在终点前）。现在平台跟着桩高一起抬起来。
+        h_nom = 0.5 * (p["height_low"] + p["height_high"])
+        plat_half_z = (h_nom + 0.05) / 2.0
+        plat_z = h_nom - plat_half_z  # 顶面恰好 = h_nom
+        start = body.add_geom(
+            type=mujoco.mjtGeom.mjGEOM_BOX,
+            size=(self.start_length / 2.0, sy / 2.0, plat_half_z),
+            pos=(self.start_length / 2.0, cy, plat_z),
+        )
+        geometries.append(TerrainGeometry(geom=start, color=_PLATFORM_COLOR))
+        end = body.add_geom(
+            type=mujoco.mjtGeom.mjGEOM_BOX,
+            size=(self.end_length / 2.0, sy / 2.0, plat_half_z),
+            pos=(sx - self.end_length / 2.0, cy, plat_z),
+        )
+        geometries.append(TerrainGeometry(geom=end, color=_PLATFORM_COLOR))
+
+        # 3) 终点标记（纯视觉，不参与碰撞）
+        goal_marker = body.add_geom(
+            type=mujoco.mjtGeom.mjGEOM_BOX,
+            size=(0.06, sy / 2.0 - 0.05, 0.002),
+            pos=(sx - self.end_length + 0.06, cy, h_nom + 0.002),
+        )
+        goal_marker.contype = 0
+        goal_marker.conaffinity = 0
+        geometries.append(TerrainGeometry(geom=goal_marker, color=_GOAL_COLOR))
+
+        # 4) 两条桩列：首/末排固定在离平台 gap 处，中间按 pitch 等分。
+        # 这样“最后一排桩到平台”的净空由 gap 控制（5–15 cm），不会随 pitch 变成 20 cm+。
+        pitch = p["pitch"] * float(self.pitch_scale)
+        stagger = p["stagger"] * float(self.stagger_scale)
+        noise = p["noise"]
+        p_missing = p["missing"]
+        gap = p["gap"]
+
+        x_first = self.start_length + half_x + gap
+        x_last = sx - self.end_length - half_x - gap
+        num_rows = max(1, int(np.floor(max(x_last - x_first, 0.0) / pitch)) + 1)
+        row_x = (
+            np.linspace(x_first, x_last, num_rows)
+            if num_rows > 1
+            else np.array([x_first], dtype=float)
+        )
+        lane_offset = self.lane_spacing / 2.0
+        y_margin = half_y + 0.02
+        x_lo = self.start_length + half_x + 0.01
+        x_hi = sx - self.end_length - half_x - 0.01
+
+        stone_color = brand_ramp(_STONE_COLOR, 0.25 + 0.55 * float(np.clip(difficulty, 0.0, 1.0)))
+
+        # 交错单桩（zigzag）：每一步只放一根桩、左右交替，步距 = (dx, 2*lane_offset)。
+        # 2026-10-28：原来是两条平行桩列，最高难度同侧中心距 0.713 m（净空 0.513），
+        # 轴距只有 0.385 m、滚不过去；第一排并行桩本身没问题（0.375-0.416 m 能过），
+        # 真正卡住的是“同侧下一根”。改成单桩交错后每一跳的距离都相等且受 max_step 约束。
+        dy = 2.0 * lane_offset
+        dx_max = float(np.sqrt(max(0.0, float(self.max_step) ** 2 - dy**2)))
+        dx = min(pitch / 2.0, dx_max)
+        dx = max(dx, 0.10)
+        n_steps = int(np.floor(max(x_last - x_first, 0.0) / dx)) + 1
+        xs = [x_first + j * dx for j in range(n_steps)]
+        if x_last - xs[-1] > 0.5 * dx:
+            xs.append(x_last)
+
+        for j, x in enumerate(xs):
+            lane = j % 2
+            y = cy + (lane_offset if lane else -lane_offset)
+            if noise > 0.0:
+                x += float(rng.uniform(-noise, noise))
+                y += float(rng.uniform(-noise, noise))
+            x = float(np.clip(x, x_lo, x_hi))
+            if y - y_margin < 0.0 or y + y_margin > sy:
+                continue
+
+            height = float(rng.uniform(p["height_low"], p["height_high"]))
+            bottom = -self.pit_depth
+            half_h = (height - bottom) / 2.0
+            stone = body.add_geom(
+                type=mujoco.mjtGeom.mjGEOM_BOX,
+                size=(half_x, half_y, half_h),
+                pos=(x, y, bottom + half_h),
+            )
+            stone.name = f"stepstone_{self._stone_counter}"
+            self._stone_counter += 1
+            geometries.append(TerrainGeometry(geom=stone, color=stone_color))
+
+        # 出生点抬到平台顶面：reset 的 z 是相对 env_origins 的，否则机器人会在
+        # 平台上方（h_nom）生成、直接掉下来。
+        origin = np.array([self.start_length / 2.0, cy, h_nom])
+        return TerrainOutput(origin=origin, geometries=geometries)
