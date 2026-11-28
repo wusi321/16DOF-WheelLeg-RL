@@ -7,7 +7,7 @@
 | 任务 | `Robot-Move-v0` |
 | 零点 | `zero-45-90-v1`（thigh 45° / calf 90°，base 0.3364 m） |
 | 训练 | 2048 环境 × 24 步 × 3000 迭代 = 147.5M 样本 |
-| 权重 | `model_2999.pt` |
+| 权重 | `3000lun_V1.pt` |
 | 训练 run | `2026-11-27_11-00-09` |
 
 ## 收敛指标（最后 20 轮均值）
@@ -45,5 +45,5 @@
 ## 回放
 
 ```bash
-python tools/play_move_wasd.py --checkpoint <本目录>/model_2999.pt
+python tools/play_move_wasd.py --checkpoint <本目录>/3000lun_V1.pt
 ```

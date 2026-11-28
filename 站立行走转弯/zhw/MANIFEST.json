@@ -9,13 +9,13 @@
   "parallel_environments": 2048,
   "num_steps_per_env": 24,
   "sampled_environment_steps": 147456000,
-  "selected_checkpoint": "model_2999.pt",
+  "selected_checkpoint": "3000lun_V1.pt",
   "physics_dt": 0.002,
   "control_dt": 0.02,
   "source_actuators": 16,
   "note": "第 2 版（轮式）：删 feet_air_time、wheel_contact_bonus 1.0、leg_joint_vel -1e-3、stand_still -1.0、joint_mirror -0.5。第 3 版待训：修正 WHEEL_SIDE_SIGNS 对角配对 bug、轮速环 kv 1->10、轮子力矩 5->12 N·m、放宽 leg_joint_vel、yaw 指令 ±1.5。",
   "files_sha256": {
     "curves.png": "0b4830d2ae35088b10e0d4fbb95031c961747d1ec6bb77e1e8e442145e2673bd",
-    "model_2999.pt": "14e9d07f70b223c0cc38f882aecca09740071dbc19305ce05ba2da138bec9d1b"
+    "3000lun_V1.pt": "14e9d07f70b223c0cc38f882aecca09740071dbc19305ce05ba2da138bec9d1b"
   }
 }
