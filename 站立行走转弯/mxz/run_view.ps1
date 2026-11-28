@@ -10,20 +10,20 @@
 
 param(
     [Parameter(ValueFromRemainingArguments = $true)]
-    [string[]]$Args
+    [string[]]$ExtraArgs
 )
 
 $ErrorActionPreference = "Continue"
 $ProjectRoot = $PSScriptRoot
-$Python = "D:\Data\RC\RC_QiangHuaXueXi\16DOF-WheelLeg-RL-main\.venv\Scripts\python.exe"
-
-if (-not (Test-Path $Python)) {
-    throw "Python not found: $Python (venv from 16DOF-WheelLeg-RL-main)"
-}
+. "$ProjectRoot\tools\find_python.ps1"
+$Python = Resolve-PythonExe -ProjectRoot $ProjectRoot
 
 $env:PYTHONPATH = Join-Path $ProjectRoot "src"
 $env:PYTHONIOENCODING = "utf-8"
 Set-Location $ProjectRoot
 
-& $Python tools\view_stand.py @Args
+Write-Host "==> 45-degree stand viewer" -ForegroundColor Cyan
+Write-Host "    python : $Python"
+
+& $Python tools\view_stand.py @ExtraArgs
 exit $LASTEXITCODE

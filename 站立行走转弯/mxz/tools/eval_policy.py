@@ -3,11 +3,15 @@
 用法::
 
     python tools/eval_policy.py --task Robot-WalkTurn-Stand-v0 \
-        --checkpoint logs/rsl_rl/robot_walk_turn_stand/<run>/model_199.pt
+        --checkpoint checkpoints/model_299.pt
 
     python tools/eval_policy.py --task Robot-WalkTurn-v0 \
-        --checkpoint logs/rsl_rl/robot_walk_turn/<run>/model_1999.pt \
+        --checkpoint checkpoints/model_1795.pt \
         --scenario straight_fast,straight_slow,turn_left,turn_right,arc_left
+
+    # 自己训练出来的 run 也能用：
+    python tools/eval_policy.py --task Robot-WalkTurn-Locked-v0 \
+        --checkpoint logs/rsl_rl/robot_walk_turn_locked/<run>/model_1795.pt
 
 做两件事：
 1. 指标：对每个场景把指令写死，跑固定时长，统计实际速度 vs 指令速度、base 高度。

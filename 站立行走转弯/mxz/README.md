@@ -41,48 +41,105 @@
 
 ---
 
+## 0. 下载即跑（拿到仓库后最短路径）
+
+仓库自带训练好的模型（`checkpoints/`），**不需要重新训练**：
+
+```powershell
+git clone -b beifen --depth 1 https://github.com/JinHao0007/16DOF-WheelLeg-RL.git
+cd 16DOF-WheelLeg-RL\站立行走转弯\mxz
+
+# 一次性装环境（细节见 1.1）
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cu128
+pip install -r requirements.txt
+
+.\run_view.ps1       # 45° 站姿，不需要任何 checkpoint
+.\run_hybrid.ps1     # 混合控制器演示：站立 → 直行 → 锁轮转向（推荐）
+```
+
+`run_*.ps1` 会自动找 Python（`$env:PYTHON` → 工程内 `.venv` → PATH），找不到会给出三种补法。
+
+> 需要 NVIDIA GPU（mjlab 跑在 MuJoCo Warp/CUDA 上）；RTX 5060 Laptop 8 GB 已验证。
+
+---
+
 ## 1. 快速开始
 
 ### 1.1 环境
 
-本工程复用旧工程的虚拟环境，不要新建：
-
-```text
-D:\Data\RC\RC_QiangHuaXueXi\16DOF-WheelLeg-RL-main\.venv\Scripts\python.exe
-```
-
 已验证环境：
 
-- Windows 10/11
-- Python 3.11.5
-- PyTorch 2.11.0 + CUDA 12.8
-- MuJoCo 3.8.1
-- mjlab + RSL-RL
-- NVIDIA RTX 5060 Laptop 8 GB
+| 组件 | 版本 |
+|---|---|
+| 系统 | Windows 10/11 |
+| Python | 3.11.5 |
+| PyTorch | 2.11.0 + CUDA 12.8 |
+| MuJoCo | 3.8.1 |
+| mjlab | 1.4.0（PyPI 包；任务由本仓库自己注册） |
+| RSL-RL | rsl-rl-lib 5.4.0 |
+| GPU | NVIDIA RTX 5060 Laptop 8 GB |
 
-> 换机器时，需要自己准备 Python 3.11 + CUDA 版 PyTorch + mjlab + RSL-RL；本仓库不包含 venv。
-
-### 1.2 定义路径变量
-
-PowerShell 里先设好两个变量，后面命令直接复用：
+从零装环境（venv 建在工程根目录，`run_*.ps1` 会自动使用它）：
 
 ```powershell
-$PROJECT = "D:\Data\16DOF-WheelLeg\16DOF-WheelLeg-WalkTurn_11.27"
-$PY      = "D:\Data\RC\RC_QiangHuaXueXi\16DOF-WheelLeg-RL-main\.venv\Scripts\python.exe"
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
 
-cd $PROJECT
-$env:PYTHONPATH = "$PROJECT\src"
-$env:PYTHONIOENCODING = "utf-8"
+# 1) CUDA 版 torch（不要用默认 PyPI 的 CPU 包）
+pip install torch==2.11.0 --index-url https://download.pytorch.org/whl/cu128
+
+# 2) mjlab + rsl-rl；mujoco / mujoco-warp / viser / tyro 由 mjlab 带出
+pip install -r requirements.txt
 ```
 
-> `PYTHONPATH` 的作用：让本工程的 `robot` 包优先于 venv 里 editable 安装的旧包。
-> `run_train.ps1` / `run_eval.ps1` 等一键脚本会自动设置。
+装完自检：
+
+```powershell
+python -c "import mjlab, torch, mujoco; print(mjlab.__version__, torch.__version__, mujoco.__version__)"
+# 期望输出：1.4.0 2.11.0+cu128 3.8.1
+```
+
+> 换机器时只有 torch 的 index-url 需要跟着 CUDA 版本改（cu121 / cu124 / cu128），
+> mjlab 与 rsl-rl 版本保持不变，策略才能和训练时一致。
+> 工程**不需要** `pip install -e .`：启动脚本会设 `PYTHONPATH=src` 并显式 `import robot` 注册任务。
+
+### 1.2 三种启动方式
+
+**A. 一键脚本（推荐）**：自动找 Python、自动设 `PYTHONPATH`：
+
+```powershell
+.\run_view.ps1       # 45° 站姿，无策略
+.\run_hybrid.ps1     # 混合控制器实时演示
+.\run_play.ps1       # mjlab play 入口，原生窗口回放
+.\run_eval.ps1       # 固定指令定量评估
+.\run_train.ps1      # 训练
+```
+
+**B. 激活 venv 后直接调 Python**（参数完全等价）：
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+$env:PYTHONPATH = "$PWD\src"
+$env:PYTHONIOENCODING = "utf-8"
+python tools\view_hybrid.py
+```
+
+**C. 指定解释器**：先 `$env:PYTHON = "C:\Python311\python.exe"`，再跑 A 里的脚本。
+
+> `PYTHONPATH` 的作用：让本工程的 `robot` 包优先于别处同名的包；
+> `run_*.ps1` 已处理好，不需要手动重复设置。
 
 ### 1.3 直接看效果（不训练）
 
+仓库自带 `checkpoints/model_1795.pt`（锁轮转向，最终交付），不训练即可演示：
+
 ```powershell
-& $PY tools\view_hybrid.py
+.\run_hybrid.ps1
 ```
+
+等价写法：激活 venv 后 `python tools\view_hybrid.py`。
 
 会打开 **MuJoCo 原生 `mjlab scene` 窗口**，1 个机器人，自动循环：
 
@@ -103,19 +160,29 @@ $env:PYTHONIOENCODING = "utf-8"
 启动时加 `--manual` 可一进来就用键盘：
 
 ```powershell
-& $PY tools\view_hybrid.py --manual
+.\run_hybrid.ps1 --manual
 ```
 
 > 终端只是启动器，**关闭终端会杀掉查看器**；退出请关 MuJoCo 窗口或回终端按 `Ctrl+C`。
 
+另一条路径：`.\run_play.ps1` 走 mjlab 自带的 play 入口（同样自带锁轮 checkpoint，默认原生窗口）。
+`--viewer viser` 可换成 `http://localhost:8080` 的网页，但 mjlab 1.4.0 的 viser 摇杆 GUI 在指令范围含 0 的任务（站姿/直行/锁轮）上会抛 `AssertionError`，所以一键脚本默认用原生窗口。
+
 ### 1.4 定量评估
 
 ```powershell
-& $PY tools\eval_hybrid.py `
-  --locked-checkpoint "logs\rsl_rl\robot_walk_turn_locked\2026-11-28_09-40-32_locked_v1\model_1795.pt" `
-  --num-envs 16 --steps 1000
+.\run_eval.ps1                                # 锁轮策略，全部场景
+.\run_eval.ps1 --scenario stand              # 只跑站姿
+.\run_eval.ps1 -Checkpoint checkpoints\model_1396.pt
 ```
 
+混合控制器（腿/轮混合逻辑，最接近最终交付）：
+
+```powershell
+python tools\eval_hybrid.py --num-envs 16 --steps 1000
+```
+
+两者默认都读 `checkpoints/model_1795.pt`，可用 `--locked-checkpoint` / `-Checkpoint` 换模型。
 `--steps 1000` 在 50 Hz 下就是 20 s；前面有 50 步 settle，不纳入统计。
 
 ### 1.5 重新训练锁轮转向策略（可选）
@@ -134,21 +201,21 @@ $env:PYTHONIOENCODING = "utf-8"
 
 ### 1.6 Git Bash
 
-Git Bash 不能直接跑 `.ps1`，直接调用 Python 入口即可：
+Git Bash 不能直接跑 `.ps1`，激活 venv 后直接调用 Python 入口即可：
 
 ```bash
-cd /d/Data/16DOF-WheelLeg/16DOF-WheelLeg-WalkTurn_11.27
+cd /path/to/16DOF-WheelLeg-RL/站立行走转弯/mxz
+source .venv/Scripts/activate
+
 export PYTHONPATH="$PWD/src"
 export PYTHONIOENCODING=utf-8
-PY="D:/Data/RC/RC_QiangHuaXueXi/16DOF-WheelLeg-RL-main/.venv/Scripts/python.exe"
 
-"$PY" tools/view_hybrid.py
-"$PY" tools/eval_hybrid.py \
-  --locked-checkpoint "logs/rsl_rl/robot_walk_turn_locked/2026-11-28_09-40-32_locked_v1/model_1795.pt" \
-  --num-envs 16 --steps 1000
+python tools/view_hybrid.py
+python tools/eval_hybrid.py --num-envs 16 --steps 1000
 ```
 
-> Git Bash 里 checkpoint 路径必须用正斜杠 `/`；反斜杠会被当成转义符。
+> Git Bash 里路径用正斜杠 `/`，反斜杠会被当成转义符。
+> 默认 checkpoint 是 `checkpoints/model_1795.pt`，不用手写长路径。
 
 ---
 
@@ -371,23 +438,30 @@ base_lin_vel 3 + foot_contact 4 = +7 → 60
 │     └─ lowpass_actions.py     # 腿位置/轮速度低通 + 随机延迟
 ├─ scripts/
 │  ├─ train.py                  # 训练入口
-│  └─ play.py                   # viser 网页回放（旧步态）
+│  └─ play.py                   # viser 网页回放
 ├─ tools/
 │  ├─ view_hybrid.py            # 原生 MuJoCo 实时查看器（最终推荐）
 │  ├─ eval_hybrid.py            # 混合控制器定量评估/录像
 │  ├─ eval_policy.py            # 单策略评估
 │  ├─ check_stand.py            # 45° 站姿门禁
 │  ├─ check_env.py              # 环境体检
-│  └─ probe_hybrid.py           # 混合控制器探针
+│  ├─ probe_hybrid.py           # 混合控制器探针
+│  └─ find_python.ps1           # 启动脚本共用的 Python 解释器查找
 ├─ docs/
 │  ├─ 训练记录.md               # 逐轮实验、失败原因、验收数据
 │  ├─ images/                   # 拼图/截图
 │  └─ videos/                   # 评估录像
-├─ logs/rsl_rl/                 # 训练日志与 checkpoint（体积大，不建议提交）
+├─ checkpoints/                 # 训练好的模型，随仓库分发（不用重训）
+│  ├─ model_1795.pt             # 最终：锁轮步态转向
+│  ├─ model_299.pt              # 站姿
+│  └─ model_1396.pt             # 旧步态转向（对照）
+├─ logs/rsl_rl/                 # 自己训练时的日志与 checkpoint（不入库）
+├─ requirements.txt             # 依赖与实测版本
+├─ run_hybrid.ps1               # 一键混合控制器演示（自带模型）
 ├─ run_train.ps1                # 一键训练（自动设 PYTHONPATH）
-├─ run_eval.ps1                 # 一键评估旧策略
+├─ run_eval.ps1                 # 一键定量评估
 ├─ run_view.ps1                 # 一键看 45° 站姿
-└─ run_play.ps1                 # 一键 viser 回放（旧步态）
+└─ run_play.ps1                 # 一键 viser 回放
 ```
 
 改代码时优先看这三个文件：
@@ -403,9 +477,14 @@ base_lin_vel 3 + foot_contact 4 = +7 → 60
 | 用途 | 路径 |
 |---|---|
 | 直行腿姿（45° 保持） | 零动作 + PD，不需要 checkpoint |
-| 站姿训练（仅站姿阶段） | `logs/rsl_rl/robot_walk_turn_stand/2026-11-27_21-49-30_stand_smoke2/model_299.pt` |
-| 锁轮步态转向（最终） | `logs/rsl_rl/robot_walk_turn_locked/2026-11-28_09-40-32_locked_v1/model_1795.pt` |
-| 旧步态版（对照） | `logs/rsl_rl/robot_walk_turn/2026-11-28_09-06-19_style_v2_standfix/model_1396.pt` |
+| 站姿训练（仅站姿阶段） | `checkpoints/model_299.pt` |
+| 锁轮步态转向（最终交付） | `checkpoints/model_1795.pt` |
+| 旧步态版（对照） | `checkpoints/model_1396.pt` |
+
+三个模型都随仓库分发（每个约 4.5 MB），下载即可复现，不需要重新训练。
+它们原始的训练目录分别在 `logs/rsl_rl/robot_walk_turn_stand/...`、
+`logs/rsl_rl/robot_walk_turn_locked/...`、`logs/rsl_rl/robot_walk_turn/...`，
+那些目录**不随仓库分发**，只在你自己训练时才会重新出现。
 
 混合控制逻辑在 `tools/eval_hybrid.py`：
 
@@ -419,7 +498,7 @@ base_lin_vel 3 + foot_contact 4 = +7 → 60
 ## 7. 实时查看器
 
 ```powershell
-& $PY tools\view_hybrid.py
+.\run_hybrid.ps1
 ```
 
 - 1 个环境，原生 `NativeMujocoViewer`，不是 mp4，也不是 viser 网页；
@@ -432,7 +511,7 @@ base_lin_vel 3 + foot_contact 4 = +7 → 60
 **模型看起来被“切开/不完整”**：鼠标滚轮把相机拉得太近，近裁剪面切开了腿/轮表面。先向后滚轮拉远，或按 `Backspace` 复位相机；还不行就加大距离：
 
 ```powershell
-& $PY tools\view_hybrid.py --distance 3.5
+.\run_hybrid.ps1 --distance 3.5
 ```
 
 **窗口一闪而过 / 没窗口**：确认在正常 Windows 桌面会话运行，而不是无桌面的远程/服务环境；`GLFW library is not initialized` 就是这个原因。
@@ -445,12 +524,15 @@ base_lin_vel 3 + foot_contact 4 = +7 → 60
 
 | 现象 | 原因 / 解决 |
 |---|---|
-| `ModuleNotFoundError: No module named 'robot'` | 没设 `PYTHONPATH`；用一键脚本，或设 `$env:PYTHONPATH="$PROJECT\src"` |
+| `ModuleNotFoundError: No module named 'robot'` | 直接调 `python` 时没设 `PYTHONPATH`；用 `run_*.ps1`，或先 `$env:PYTHONPATH="$PWD\src"` |
+| `Python not found` / 找不到解释器 | `run_*.ps1` 支持三种补法：`$env:PYTHON`、工程内 `.venv`、PATH |
+| `No checkpoint found` / `找不到锁轮策略 checkpoint` | 仓库自带 `checkpoints/model_1795.pt`；自己训练的用 `--checkpoint-file` / `-Checkpoint` / `--locked-checkpoint` 指定；只看站姿用 `--agent zero` |
 | `CUDA out of memory` | 把 `--env.scene.num-envs` 从 2048 降到 1024 |
 | 训练一开始就 exit 1，但没有 traceback | 旧工程常见；先看 `logs/rsl_rl/...` 和终端 stderr，确认是不是 CUDA/GLFW 初始化问题 |
 | Git Bash 找不到 checkpoint | 路径用 `/`，不要用 `\` |
 | `.ps1` 报“字符串缺少终止符” | PowerShell 5.1 按 ANSI 解析 UTF-8 无 BOM 中文；脚本只写 ASCII，中文放 Markdown |
 | 查看器里模型被切 | 滚轮拉远 / `Backspace` / `--distance 3.5`，不是模型缺件 |
+| `--viewer viser` 报 `AssertionError: max >= value >= min` | mjlab 1.4.0 的 viser 摇杆 GUI 不接受 0 范围（站姿/直行/锁轮任务）；`run_play.ps1` 默认已改用原生窗口，只有全速度范围的 `Robot-WalkTurn-v0` 适合 viser |
 | 终端关了查看器也没了 | 终端是启动器；保持终端打开，或改用独立进程启动 |
 
 ---
@@ -479,7 +561,7 @@ base_lin_vel 3 + foot_contact 4 = +7 → 60
 - [MuJoCo](https://mujoco.org/)：物理仿真；
 - [mjlab](https://github.com/mujocolab/mjlab)：MuJoCo + RL 任务框架；
 - RSL-RL：PPO 实现；
-- 旧工程 `D:\Data\RC\RC_QiangHuaXueXi\16DOF-WheelLeg-RL-main`：venv、训练范式和早期步态策略；
+- 早期工程（作者本机，**不随本仓库分发**）：提供 venv、训练范式和早期步态策略；
 - 模型资产在 `16DOF-URDF/`，版权归原模型作者。
 
 更细的实验数据、失败原因和逐轮记录见 [`docs/训练记录.md`](docs/训练记录.md)。

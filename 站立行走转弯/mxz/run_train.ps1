@@ -8,19 +8,27 @@
 # Note: with --agent.resume, --agent.max-iterations is the number of ADDITIONAL iterations.
 #
 # mjlab parses nested configs with tyro, so overrides are --env.xxx / --agent.xxx.
+# Arguments are parsed by hand so that "--env.xxx" values are forwarded untouched.
 
 param(
-    [string]$Task = "Robot-WalkTurn-v0",
     [Parameter(ValueFromRemainingArguments = $true)]
-    [string[]]$Args
+    [string[]]$AllArgs = @()
 )
 
 $ErrorActionPreference = "Continue"
 $ProjectRoot = $PSScriptRoot
-$Python = "D:\Data\RC\RC_QiangHuaXueXi\16DOF-WheelLeg-RL-main\.venv\Scripts\python.exe"
+. "$ProjectRoot\tools\find_python.ps1"
+$Python = Resolve-PythonExe -ProjectRoot $ProjectRoot
 
-if (-not (Test-Path $Python)) {
-    throw "Python not found: $Python (venv from 16DOF-WheelLeg-RL-main)"
+$Task = "Robot-WalkTurn-v0"
+$Extra = New-Object System.Collections.Generic.List[string]
+
+if ($AllArgs.Count -gt 0 -and $AllArgs[0] -notlike "-*") {
+    $Task = $AllArgs[0]
+    for ($i = 1; $i -lt $AllArgs.Count; $i++) { $Extra.Add($AllArgs[$i]) }
+}
+else {
+    for ($i = 0; $i -lt $AllArgs.Count; $i++) { $Extra.Add($AllArgs[$i]) }
 }
 
 $env:PYTHONPATH = Join-Path $ProjectRoot "src"
@@ -31,5 +39,5 @@ Write-Host "==> training task $Task" -ForegroundColor Cyan
 Write-Host "    project : $ProjectRoot"
 Write-Host "    python  : $Python"
 
-& $Python scripts\train.py $Task @Args
+& $Python scripts\train.py $Task @Extra
 exit $LASTEXITCODE

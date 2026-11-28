@@ -5,8 +5,8 @@ straight/turn mode is selected exactly like ``eval_hybrid.py``.
 
 Straight: legs hold the 45 deg stance with zero joint action (PD), wheels
           are driven by (vx / R * 1.14) / 10.
-Turn:     the locked-wheel gait policy (model_1795.pt) drives the legs and
-          the wheel action is forced to zero.
+Turn:     the locked-wheel gait policy (checkpoints/model_1795.pt) drives the
+          legs and the wheel action is forced to zero.
 
 Auto demo (default):
     stand 2 s -> straight 0.4 (4 s) -> turn left +0.8 (3 s)
@@ -141,10 +141,8 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--locked-checkpoint",
-        default=(
-            "logs/rsl_rl/robot_walk_turn_locked/"
-            "2026-11-28_09-40-32_locked_v1/model_1795.pt"
-        ),
+        default="checkpoints/model_1795.pt",
+        help="bundled locked-wheel turn policy (override after training your own run)",
     )
     parser.add_argument("--manual", action="store_true", help="start in keyboard mode")
     parser.add_argument("--steps", type=int, default=0, help="0 = run until window closes")
@@ -159,6 +157,15 @@ def main() -> int:
     parser.add_argument("--azimuth", type=float, default=135.0)
     parser.add_argument("--device", default=None)
     args = parser.parse_args()
+
+    locked_ckpt = Path(args.locked_checkpoint)
+    if not locked_ckpt.is_absolute():
+        locked_ckpt = ROOT / locked_ckpt
+    if not locked_ckpt.exists():
+        print(f"[error] 找不到锁轮策略 checkpoint: {locked_ckpt}")
+        print("        仓库自带 checkpoints/model_1795.pt；")
+        print("        如果你自己训练过，用 --locked-checkpoint <path> 指定。")
+        return 1
 
     from mjlab.utils.torch import configure_torch_backends
 
@@ -177,9 +184,6 @@ def main() -> int:
     wrapped = RslRlVecEnvWrapper(
         env, clip_actions=load_rl_cfg("Robot-WalkTurn-v0").clip_actions
     )
-    locked_ckpt = Path(args.locked_checkpoint)
-    if not locked_ckpt.is_absolute():
-        locked_ckpt = ROOT / locked_ckpt
     locked_policy = load_policy("Robot-WalkTurn-Locked-v0", wrapped, device, locked_ckpt)
     policy = HybridPolicy(env, locked_policy, manual=args.manual)
 

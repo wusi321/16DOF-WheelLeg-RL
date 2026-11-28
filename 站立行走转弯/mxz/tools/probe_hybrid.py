@@ -4,6 +4,9 @@ This does not change any training code. It answers two questions before we
 redesign the task:
   1. Can the 45-degree stand policy hold its legs while the wheels roll?
   2. Can the current turn policy still turn when the wheel actions are forced to 0?
+
+Both policies are bundled under checkpoints/ (model_299.pt, model_1396.pt);
+override with --stand-checkpoint / --turn-checkpoint.
 """
 
 from __future__ import annotations
@@ -81,22 +84,26 @@ def main() -> int:
     parser.add_argument("--num-envs", type=int, default=8)
     parser.add_argument("--steps", type=int, default=250)
     parser.add_argument("--slip", type=float, default=1.0, help="feed-forward wheel slip compensation")
+    parser.add_argument("--stand-checkpoint", default="checkpoints/model_299.pt")
+    parser.add_argument("--turn-checkpoint", default="checkpoints/model_1396.pt")
     parser.add_argument("--device", default=None)
     args = parser.parse_args()
+
+    stand_ckpt = Path(args.stand_checkpoint)
+    if not stand_ckpt.is_absolute():
+        stand_ckpt = ROOT / stand_ckpt
+    turn_ckpt = Path(args.turn_checkpoint)
+    if not turn_ckpt.is_absolute():
+        turn_ckpt = ROOT / turn_ckpt
+    for label, ckpt in (("stand", stand_ckpt), ("turn", turn_ckpt)):
+        if not ckpt.exists():
+            print(f"[error] {label} checkpoint not found: {ckpt}")
+            return 1
 
     from mjlab.utils.torch import configure_torch_backends
 
     configure_torch_backends()
     device = args.device or ("cuda:0" if torch.cuda.is_available() else "cpu")
-
-    stand_ckpt = (
-        ROOT
-        / "logs/rsl_rl/robot_walk_turn_stand/2026-11-27_21-49-30_stand_smoke2/model_299.pt"
-    )
-    turn_ckpt = (
-        ROOT
-        / "logs/rsl_rl/robot_walk_turn/2026-11-28_09-06-19_style_v2_standfix/model_1396.pt"
-    )
 
     print("[A] stand policy, legs hold 45deg, wheels driven at vx/R")
     _, env = make_env("Robot-WalkTurn-Stand-v0", args.num_envs, device)

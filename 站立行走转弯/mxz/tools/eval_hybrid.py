@@ -162,7 +162,11 @@ def record_videos(args, locked_policy, device):
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--locked-checkpoint", required=True)
+    parser.add_argument(
+        "--locked-checkpoint",
+        default="checkpoints/model_1795.pt",
+        help="bundled locked-wheel turn policy (override after training your own run)",
+    )
     parser.add_argument("--num-envs", type=int, default=16)
     parser.add_argument("--steps", type=int, default=1000)
     parser.add_argument("--video", action="store_true")
@@ -179,6 +183,10 @@ def main() -> int:
     locked_ckpt = Path(args.locked_checkpoint)
     if not locked_ckpt.is_absolute():
         locked_ckpt = ROOT / locked_ckpt
+    if not locked_ckpt.exists():
+        print(f"[error] checkpoint not found: {locked_ckpt}")
+        print("        the repo ships checkpoints/model_1795.pt")
+        return 1
 
     # Generic play env; wheel action scale is 10 here, so we write target/10.
     _, env = make_env("Robot-WalkTurn-v0", args.num_envs, device)
