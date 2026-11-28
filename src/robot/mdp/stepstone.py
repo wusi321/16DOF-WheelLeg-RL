@@ -1,4 +1,4 @@
-﻿"""梅花桩任务专用的奖励 / 终止 / 课程项（对应 16DOF_RL.md 第 3、5、6 节）。
+"""梅花桩任务专用的奖励 / 终止 / 课程项（对应 16DOF_RL.md 第 3、5、6 节）。
 
 设计要点：
 
@@ -318,3 +318,95 @@ def time_out_penalty(
     dx = asset.data.root_link_pos_w[:, 0] - env.scene.env_origins[:, 0]
     frac = torch.clamp(dx / max(distance, 1e-6), 0.0, 1.0)
     return timed_out * scale * (1.0 - frac)
+
+
+def wheel_support_reward(
+    env: "ManagerBasedRlEnv",
+    x_min: float = 0.8,
+    x_max: float = 6.8,
+    bottom_tol: float = 0.06,
+    support_frac: float = 1.0,
+    scale: float = 1.0,
+) -> torch.Tensor:
+    """桩区内每步“有几个轮子真正站在桩顶面上”（0-4），桩区外返回 0。
+
+    判定比“接触传感器有接触”严格：轮心必须落在桩顶矩形内，且轮底与桩顶
+    高度差在 ``bottom_tol`` 以内。这样“轮子蹭着桩侧面/边缘”不算支撑，策略
+    必须把轮子放到桩顶面上才拿得到奖励（2026-10-28 用户第二次回放反馈：
+    新模型轮子经常落在桩边缘/桩间缝隙，视觉上像“陷进桩里”）。
+
+    ``support_frac`` 把“桩顶矩形”按比例收缩成中心带：0.75 表示轮心必须落在
+    桩心 ±7.5 cm 内才算支撑，逼策略把轮子放到桩顶中心带（p17 实测前轮踩边
+    率仍高达 43%，纯奖励权重调整会让左右腿在“跨得远/落得准”之间来回摇摆）。
+
+    返回未缩放的非负量，由奖励管理器乘 weight。
+    """
+    from .stone_coverage import _state, _sync
+
+    state = _state(env)
+    _sync(env, state)
+    zeros = torch.zeros(env.num_envs, device=env.device)
+    if not state.wheel_ids or state.stones.numel() == 0:
+        return zeros
+    asset: Entity = env.scene["robot"]
+    origins = env.scene.env_origins
+    pos = asset.data.body_link_pos_w[:, state.wheel_ids] - origins[:, None, :]
+    bottom = pos[..., 2] - naming.WHEEL_RADIUS
+    sx = state.stones[:, None, :, 0]
+    sy = state.stones[:, None, :, 1]
+    shx = state.stones[:, None, :, 2]
+    shy = state.stones[:, None, :, 3]
+    top = state.stones[:, None, :, 4]
+    frac = float(support_frac)
+    on = (
+        ((bottom[:, :, None] - top).abs() <= bottom_tol)
+        & ((pos[..., 0][:, :, None] - sx).abs() <= shx * frac)
+        & ((pos[..., 1][:, :, None] - sy).abs() <= shy * frac)
+    )
+    support = on.sum(dim=-1).sum(dim=1).to(torch.float32)
+    x = _root_x_rel(env, asset)
+    inside = (x > x_min) & (x < x_max)
+    return torch.where(inside, support * scale, zeros)
+
+
+def wheel_airtime_penalty(
+    env: "ManagerBasedRlEnv",
+    sensor_name: str = "feet_ground_contact",
+    x_min: float = 0.8,
+    x_max: float = 6.8,
+    min_support: int = 3,
+    grace_steps: int = 5,
+    scale: float = 1.0,
+) -> torch.Tensor:
+    """桩区内连续 ``grace_steps`` 步以上支撑轮数 < ``min_support`` 时给 1。
+
+    只罚“持续悬空”（比如前两轮在桩上、后两轮一路悬空滑行），跳桩瞬间的正常
+    腾空（几步内）不罚。返回非负量，配合负权重使用。
+    """
+    try:
+        sensor = env.scene[sensor_name]
+    except (KeyError, ValueError):
+        return torch.zeros(env.num_envs, device=env.device)
+    found = sensor.data.found
+    if found.ndim == 3:
+        found = found[..., -1]
+    support = (found > 0.5).sum(dim=1)
+    asset: Entity = env.scene["robot"]
+    x = asset.data.root_link_pos_w[:, 0] - env.scene.env_origins[:, 0]
+    inside = (x > x_min) & (x < x_max)
+    bad = inside & (support < int(min_support))
+
+    state = getattr(env, "_stone_support", None)
+    buf = env.episode_length_buf
+    if state is None or state["count"].shape != buf.shape:
+        state = {
+            "count": torch.zeros_like(buf, dtype=torch.long),
+            "buf": buf.clone(),
+        }
+        setattr(env, "_stone_support", state)
+    reset = (buf <= 1) | (buf < state["buf"])
+    state["count"] = torch.where(reset, torch.zeros_like(state["count"]), state["count"])
+    state["count"] = torch.where(bad, state["count"] + 1, torch.zeros_like(state["count"]))
+    state["buf"] = buf.clone()
+    over = (state["count"] > int(grace_steps)) & bad
+    return over.to(torch.float32) * scale

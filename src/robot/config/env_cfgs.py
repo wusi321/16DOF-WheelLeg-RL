@@ -68,7 +68,9 @@ from ..mdp.stepstone import (
     time_out_penalty,
     reached_goal,
     stepstone_levels,
+    wheel_airtime_penalty,
     wheel_slip,
+    wheel_support_reward,
 )
 from ..mdp.gap_course import gaps_crossed, leap_bonus
 from ..mdp.slalom import (
@@ -90,7 +92,10 @@ from ..mdp.combo import (
 )
 from ..mdp.stone_coverage import (
     all_stones_bonus,
+    landing_edge_penalty,
+    landing_precision_reward,
     pit_contact_penalty,
+    rear_gap_clearance_penalty,
     stone_coverage,
     stone_touch_reward,
 )
@@ -1009,18 +1014,30 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         params={"sensor_name": "height_scanner"},
         clip=(-1.0, 1.0),
     )
+    # 四轮接触标志（4 维）：让策略"看得见"哪个轮子踩实、哪个悬空。
+    # 之前 actor 只有本体状态 + 高度图，看不到轮子接触，才会形成"后轮悬空、
+    # 靠轮子撞桩边被带上去"的捷径（2026-10-28 用户回放反馈）。实机侧可用
+    # 轮电机电流/扭矩估计接触。
+    cfg.observations["actor"].terms["wheel_contact"] = ObservationTermCfg(
+        func=safe_foot_contact,
+        params={"sensor_name": "feet_ground_contact"},
+    )
 
     # ------------------------------------------------------------------ 指令
+    # 2026-10-28 p6 步态诊断：机身 y 精确锁死中线（std 0.023），轮子在 ±0.19 m、
+    # 桩列在 ±0.20 m，差 1-3 cm 挂不上桩——策略从未学过"横移去压桩"。
+    # 原因：rel_lateral_envs=0.10 意味着 90% 的时间指令是"纯直行"，横移从没被
+    # 练过。放开到 0.35，并加宽 lin_vel_y，让"左右蹭桩"进入策略的探索空间。
     twist = cfg.commands["twist"]
     twist.heading_command = False
     twist.rel_heading_envs = 0.0
     twist.ranges.heading = None
     twist.rel_standing_envs = 0.05
-    twist.rel_forward_envs = 0.70
-    twist.rel_lateral_envs = 0.10
+    twist.rel_forward_envs = 0.60
+    twist.rel_lateral_envs = 0.35
     twist.rel_yaw_envs = 0.15
     twist.ranges.lin_vel_x = (0.3, 0.8)
-    twist.ranges.lin_vel_y = (-0.2, 0.2)
+    twist.ranges.lin_vel_y = (-0.3, 0.3)
     twist.ranges.ang_vel_z = (-0.4, 0.4)
     twist.resampling_time_range = (6.0, 6.0)
 
@@ -1045,6 +1062,17 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         interval_range_s=(6.0, 10.0),
         params={"velocity_range": {"x": (-0.2, 0.2), "y": (-0.2, 0.2)}, "asset_cfg": SceneEntityCfg("robot")},
     )
+    # 轮子-地形摩擦随机化：削弱"轮子撞桩边被带上去"的捷径（实机上 15-20 cm
+    # 硬桩边会把轮子弹开/卡住），迫使策略学会主动把轮子放到桩顶面。
+    cfg.events["wheel_friction"] = EventTermCfg(
+        func=envs_dr.geom_friction,
+        mode="startup",
+        params={
+            "asset_cfg": SceneEntityCfg("robot", geom_names=(".*_wheel_geom",)),
+            "ranges": (0.8, 1.2),
+            "operation": "scale",
+        },
+    )
 
     # ------------------------------------------------------------------ 奖励
     cfg.rewards = {
@@ -1057,6 +1085,17 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         "track_lin_vel_x": RewardTermCfg(
             func=track_linear_velocity_x,
             weight=0.8,
+            params={"std": 0.25, "command_name": "twist"},
+        ),
+        # p10 实验（2026-10-28）：补横向速度跟踪。
+        # 步态诊断显示机身 y 一直锁死赛道中线（std 0.02 m），轮子靠擦边挂桩
+        # 才拿到 0.5 左右的覆盖率——奖励里此前只有 vx/yaw 跟踪，横移从未被
+        # 激励过（rel_lateral_envs 虽然放开到 0.35，但策略不跟 y 指令）。
+        # 加 0.5 权重的 vy 跟踪，让策略先在平地学会横移，再带到高级地形
+        # 对准桩、稳落点，突破 6 级瓶颈。
+        "track_lin_vel_y": RewardTermCfg(
+            func=track_linear_velocity_y,
+            weight=0.5,
             params={"std": 0.25, "command_name": "twist"},
         ),
         "track_ang_vel_z": RewardTermCfg(
@@ -1088,13 +1127,17 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
             weight=-0.5,
             params={"sensor_name": "body_collision", "threshold": 1.0},
         ),
-        # 到终点给 +120，并按桩覆盖率打折（覆盖 0 -> 只拿 20%）：跳过一半桩不算通过。
-        # 权重从 60 提到 120：2026-10-27 那次训练里策略发现“在桩上慢慢蹭、耗到超时”
+        # 到终点给 +120，并按桩覆盖率打折。floor 从 0.2 收到 0：p4 轮（2048 环境
+        # 1000 迭代，zigzag 地形）实测 coverage 精确卡在 0.50——策略走"同侧序列"
+        # 每两根踩一根，跳过另一侧的桩。floor=0.2 时踩半 72 分 vs 踩满 120 分，
+        # 差距只有 48，不够抵消掉坑风险，策略没有动力改步态。归零后踩半 60、
+        # 踩满 120，配合 stone_touch 3.0，"每根都踩"的期望显著占优。
+        # 权重从 60 提到 120：2026-10-27 那次训练里策略发现"在桩上慢慢蹭、耗到超时"
         # 比冲过终点更赚（每根桩 +5，16 根就 80），于是停在最后一根桩前不动。
         "goal_reached": RewardTermCfg(
             func=goal_with_coverage,
             weight=120.0,
-            params={"distance": STEPSTONE_GOAL_DISTANCE, "floor": 0.2},
+            params={"distance": STEPSTONE_GOAL_DISTANCE, "floor": 0.0},
         ),
         # 摔倒比超时更糟：摔倒丢掉所有后续机会，超时至少还在桩上。
         # 反过来（超时 -20 > 摔倒 -10）会让“过不去就赶紧摔”成为最优解——2026-10-27
@@ -1122,11 +1165,86 @@ def stepstone_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
             func=overspeed, weight=-0.5, params={"command_name": "twist", "margin": 0.3}
         ),
         # 赛事规则：每个桩顶面必须至少被足底（轮子）接触一次。
-        # 单桩权重从 +5 降到 +2：16 根 32，只能作为过程引导，不能压过“过终点”。
-        "stone_touch": RewardTermCfg(func=stone_touch_reward, weight=2.0),
+        # 单桩权重 3 -> 5：p6 步态诊断显示机身锁死中线、轮子离桩 1-3 cm 挂不上，
+        # 需要更强的单桩收益推动策略学会"横移压桩"。42 根全踩 210 vs 半踩 105。
+        "stone_touch": RewardTermCfg(func=stone_touch_reward, weight=5.0),
         "all_stones": RewardTermCfg(func=all_stones_bonus, weight=20.0),
+        # 四轮支撑：桩区内每步按"有几个轮子真正站在桩顶面上"给分（0-4），
+        # 桩区外返回 0。判定是"轮心在桩顶矩形内 + 轮底贴桩顶"，蹭桩边不算。
+        # 2026-10-28 用户两次回放反馈：先有后轮悬空、靠轮子撞桩边被带上去；
+        # 收紧后又有轮子落在桩边缘/桩间缝隙（视觉像"陷进桩里"）。严格判定
+        # 逼策略把轮子放到桩顶面中心。
+        "wheel_support": RewardTermCfg(
+            func=wheel_support_reward,
+            # 0.1→0.2：p20-p22 连续三轮都在"前轮好了后轮退"之间摆动，
+            # 平均踩边率卡在 24-27%。支撑判定已收紧到中心带（support_frac 0.75），
+            # 加大支撑权重让"踩准"比"跨远"更值钱，推动四条腿同时收敛。
+            weight=0.2,
+            params={
+                "x_min": STEPSTONE_START_LENGTH,
+                "x_max": STEPSTONE_GOAL_DISTANCE,
+                # 0.5：轮心必须落在桩心 ±5 cm 内才算支撑（2026-10-30 收紧：p27 落点
+                # 中位数 4-6 cm、边缘率仍 20%+，让"踩边"连支撑分都拿不到，与
+                # landing_precision、landing_edge 三管齐下逼四条腿都落桩心）。
+                "support_frac": 0.5,
+            },
+        ),
+        # 持续悬空惩罚：桩区内支撑轮数 < 3 连续超过 5 步（0.1 s）才罚，
+        # 跳桩瞬间的正常腾空不罚。
+        "wheel_airtime": RewardTermCfg(
+            func=wheel_airtime_penalty,
+            weight=-0.5,
+            params={
+                "sensor_name": "feet_ground_contact",
+                "x_min": STEPSTONE_START_LENGTH,
+                "x_max": STEPSTONE_GOAL_DISTANCE,
+                "min_support": 3,
+                "grace_steps": 5,
+            },
+        ),
         "pit_contact": RewardTermCfg(
             func=pit_contact_penalty, weight=-2.0, params={"min_wheels": 2}
+        ),
+        # 后轮过缝惩罚：后两轮位于桩间隙正上方、轮心低于最近桩顶 7 cm 以内时，
+        # 按每轮缺口深度罚。跨桩时后腿抬不够、轮子蹭到桩侧或掉进缝里，实机上会卡死；
+        # 前轮抬高没问题（探针统计前轮全程高于桩顶 7 cm），所以只罚后两轮。
+        "rear_gap_clearance": RewardTermCfg(
+            func=rear_gap_clearance_penalty,
+            weight=-30.0,
+            params={
+                "margin": 0.07,
+                "x_min": STEPSTONE_START_LENGTH,
+                "x_max": STEPSTONE_GOAL_DISTANCE,
+            },
+        ),
+        # 落点精度：踩在桩顶面上时，轮心离桩心越近分越高（边缘≈0，中心=1），
+        # 三次方曲线让"搭边"几乎得不到分，逼策略把轮子放到桩顶中央带。
+        # 要求机身速度 > 0.25 m/s 才计分——否则策略会站在桩上不动刷分
+        # （p15 实测：ep_len 1405 步、goal 归零、landing_precision 0.76/步）。
+        # 权重 0.5→0.8：p17 的 FR 仍有 43% 踩边，需要更强的"往中心落"引力。
+        "landing_precision": RewardTermCfg(
+            func=landing_precision_reward,
+            weight=0.8,
+            params={
+                "x_min": STEPSTONE_START_LENGTH,
+                "x_max": STEPSTONE_GOAL_DISTANCE,
+                "bottom_tol": 0.06,
+                "min_speed": 0.25,
+            },
+        ),
+        # 贴边惩罚（2026-10-30 收紧）：用户回放指出“轮子已经到桩边，实机已经掉
+        # 下去了”，所以合格落点从“整个桩顶面”收紧到“桩心附近 5 cm”。超出 5 cm
+        # 就按越界程度线性计罚（到桩边计满），配合 landing_precision 的 5 cm 给分线。
+        "landing_edge": RewardTermCfg(
+            func=landing_edge_penalty,
+            weight=-0.3,
+            params={
+                "x_min": STEPSTONE_START_LENGTH,
+                "x_max": STEPSTONE_GOAL_DISTANCE,
+                "bottom_tol": 0.06,
+                "edge_frac": 0.5,
+                "min_speed": 0.25,
+            },
         ),
     }
 
