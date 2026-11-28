@@ -72,7 +72,7 @@
           <geom class="visual" mesh="FR_thigh_Link" />
           <geom class="collision" name="FR_thigh_Link_collision" type="mesh" mesh="FR_thigh_Link_collision_hull" />
           <body name="FR_calf_Link" pos="-0.00014431 -0.0445 -0.23012" quat="1 0 0 0">
-            <joint name="FR_calf_joint" type="hinge" axis="0 1 0" damping="0.1" frictionloss="0.02" armature="0.002" range="-2.7 -0.9" limited="true" />
+            <joint name="FR_calf_joint" type="hinge" axis="0 1 0" damping="0.1" frictionloss="0.02" armature="0.002" range="-2.7 -1.21" limited="true" />
             <inertial pos="0.000154306 -0.031734502 -0.178725975" mass="1.00" quat="0.517908659 0.478758972 0.478210535 -0.523330824" diaginertia="0.000446193869 0.00681815275 0.00700960738" />
             <geom class="visual" mesh="FR_calf_Link" />
             <geom class="collision" name="FR_calf_Link_collision" type="mesh" mesh="FR_calf_Link_collision_hull" />
@@ -96,7 +96,7 @@
           <geom class="visual" mesh="FL_thigh_Link" />
           <geom class="collision" name="FL_thigh_Link_collision" type="mesh" mesh="FL_thigh_Link_collision_hull" />
           <body name="FL_calf_Link" pos="-0.00014431 0.0445 -0.23012" quat="1 0 0 0">
-            <joint name="FL_calf_joint" type="hinge" axis="0 1 0" damping="0.1" frictionloss="0.02" armature="0.002" range="-2.7 -0.9" limited="true" />
+            <joint name="FL_calf_joint" type="hinge" axis="0 1 0" damping="0.1" frictionloss="0.02" armature="0.002" range="-2.7 -1.21" limited="true" />
             <inertial pos="0.000154034 0.031734503 -0.178725977" mass="1.00" quat="0.478744561 0.517917438 0.523322061 -0.478225044" diaginertia="0.000446193254 0.00681815346 0.00700960728" />
             <geom class="visual" mesh="FL_calf_Link" />
             <geom class="collision" name="FL_calf_Link_collision" type="mesh" mesh="FL_calf_Link_collision_hull" />
@@ -120,7 +120,7 @@
           <geom class="visual" mesh="RL_thigh_Link" />
           <geom class="collision" name="RL_thigh_Link_collision" type="mesh" mesh="RL_thigh_Link_collision_hull" />
           <body name="RL_calf_Link" pos="0.00014431 0.0445 -0.23012" quat="1 0 0 0">
-            <joint name="RL_calf_joint" type="hinge" axis="0 1 0" damping="0.1" frictionloss="0.02" armature="0.002" range="0.9 2.7" limited="true" />
+            <joint name="RL_calf_joint" type="hinge" axis="0 1 0" damping="0.1" frictionloss="0.02" armature="0.002" range="1.21 2.7" limited="true" />
             <inertial pos="-0.000154306 0.031734502 -0.178725975" mass="1.00" quat="0.478210535 0.523330824 0.517908659 -0.478758972" diaginertia="0.000446193869 0.00681815275 0.00700960738" />
             <geom class="visual" mesh="RL_calf_Link" />
             <geom class="collision" name="RL_calf_Link_collision" type="mesh" mesh="RL_calf_Link_collision_hull" />
@@ -144,7 +144,7 @@
           <geom class="visual" mesh="RR_thigh_Link" />
           <geom class="collision" name="RR_thigh_Link_collision" type="mesh" mesh="RR_thigh_Link_collision_hull" />
           <body name="RR_calf_Link" pos="0.00014431 -0.0445 -0.23012" quat="1 0 0 0">
-            <joint name="RR_calf_joint" type="hinge" axis="0 1 0" damping="0.1" frictionloss="0.02" armature="0.002" range="0.9 2.7" limited="true" />
+            <joint name="RR_calf_joint" type="hinge" axis="0 1 0" damping="0.1" frictionloss="0.02" armature="0.002" range="1.21 2.7" limited="true" />
             <inertial pos="-0.000154034 -0.031734503 -0.178725977" mass="1.00" quat="0.523322061 0.478225044 0.478744561 -0.517917438" diaginertia="0.000446193254 0.00681815346 0.00700960728" />
             <geom class="visual" mesh="RR_calf_Link" />
             <geom class="collision" name="RR_calf_Link_collision" type="mesh" mesh="RR_calf_Link_collision_hull" />
@@ -162,19 +162,19 @@
   <actuator>
     <position name="FR_hip_motor" joint="FR_hip_joint" kp="30" kv="2.0" ctrllimited="true" forcelimited="true" ctrlrange="-0.9 0.7" forcerange="-30 30" />
     <position name="FR_thigh_motor" joint="FR_thigh_joint" kp="30" kv="2.0" ctrllimited="true" forcelimited="true" ctrlrange="-1.2 1.5" forcerange="-30 30" />
-    <position name="FR_calf_motor" joint="FR_calf_joint" kp="20" kv="2.0" ctrllimited="true" forcelimited="true" ctrlrange="-2.7 -0.9" forcerange="-20 20" />
+    <position name="FR_calf_motor" joint="FR_calf_joint" kp="20" kv="2.0" ctrllimited="true" forcelimited="true" ctrlrange="-2.7 -1.21" forcerange="-20 20" />
     <velocity name="FR_wheel_motor" joint="FR_wheel_joint" kv="1.0" ctrllimited="true" forcelimited="true" ctrlrange="-20 20" forcerange="-5 5" />
     <position name="FL_hip_motor" joint="FL_hip_joint" kp="30" kv="2.0" ctrllimited="true" forcelimited="true" ctrlrange="-0.7 0.9" forcerange="-30 30" />
     <position name="FL_thigh_motor" joint="FL_thigh_joint" kp="30" kv="2.0" ctrllimited="true" forcelimited="true" ctrlrange="-1.2 1.5" forcerange="-30 30" />
-    <position name="FL_calf_motor" joint="FL_calf_joint" kp="20" kv="2.0" ctrllimited="true" forcelimited="true" ctrlrange="-2.7 -0.9" forcerange="-20 20" />
+    <position name="FL_calf_motor" joint="FL_calf_joint" kp="20" kv="2.0" ctrllimited="true" forcelimited="true" ctrlrange="-2.7 -1.21" forcerange="-20 20" />
     <velocity name="FL_wheel_motor" joint="FL_wheel_joint" kv="1.0" ctrllimited="true" forcelimited="true" ctrlrange="-20 20" forcerange="-5 5" />
     <position name="RL_hip_motor" joint="RL_hip_joint" kp="30" kv="2.0" ctrllimited="true" forcelimited="true" ctrlrange="-0.7 0.9" forcerange="-30 30" />
     <position name="RL_thigh_motor" joint="RL_thigh_joint" kp="30" kv="2.0" ctrllimited="true" forcelimited="true" ctrlrange="-1.5 1.2" forcerange="-30 30" />
-    <position name="RL_calf_motor" joint="RL_calf_joint" kp="20" kv="2.0" ctrllimited="true" forcelimited="true" ctrlrange="0.9 2.7" forcerange="-20 20" />
+    <position name="RL_calf_motor" joint="RL_calf_joint" kp="20" kv="2.0" ctrllimited="true" forcelimited="true" ctrlrange="1.21 2.7" forcerange="-20 20" />
     <velocity name="RL_wheel_motor" joint="RL_wheel_joint" kv="1.0" ctrllimited="true" forcelimited="true" ctrlrange="-20 20" forcerange="-5 5" />
     <position name="RR_hip_motor" joint="RR_hip_joint" kp="30" kv="2.0" ctrllimited="true" forcelimited="true" ctrlrange="-0.9 0.7" forcerange="-30 30" />
     <position name="RR_thigh_motor" joint="RR_thigh_joint" kp="30" kv="2.0" ctrllimited="true" forcelimited="true" ctrlrange="-1.5 1.2" forcerange="-30 30" />
-    <position name="RR_calf_motor" joint="RR_calf_joint" kp="20" kv="2.0" ctrllimited="true" forcelimited="true" ctrlrange="0.9 2.7" forcerange="-20 20" />
+    <position name="RR_calf_motor" joint="RR_calf_joint" kp="20" kv="2.0" ctrllimited="true" forcelimited="true" ctrlrange="1.21 2.7" forcerange="-20 20" />
     <velocity name="RR_wheel_motor" joint="RR_wheel_joint" kv="1.0" ctrllimited="true" forcelimited="true" ctrlrange="-20 20" forcerange="-5 5" />
   </actuator>
   <keyframe>

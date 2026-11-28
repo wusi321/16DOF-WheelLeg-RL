@@ -120,7 +120,7 @@
     <parent link="FR_thigh_Link" />
     <child link="FR_calf_Link" />
     <axis xyz="0 1 0" />
-    <limit lower="-2.7" upper="-0.9" effort="20" velocity="20" />
+    <limit lower="-2.7" upper="-1.21" effort="20" velocity="20" />
     <dynamics damping="0.1" friction="0.02" />
   </joint>
   <link name="FR_wheel_Link">
@@ -232,7 +232,7 @@
     <parent link="FL_thigh_Link" />
     <child link="FL_calf_Link" />
     <axis xyz="0 1 0" />
-    <limit lower="-2.7" upper="-0.9" effort="20" velocity="20" />
+    <limit lower="-2.7" upper="-1.21" effort="20" velocity="20" />
     <dynamics damping="0.1" friction="0.02" />
   </joint>
   <link name="FL_wheel_Link">
@@ -344,7 +344,7 @@
     <parent link="RL_thigh_Link" />
     <child link="RL_calf_Link" />
     <axis xyz="0 1 0" />
-    <limit lower="0.9" upper="2.7" effort="20" velocity="20" />
+    <limit lower="1.21" upper="2.7" effort="20" velocity="20" />
     <dynamics damping="0.1" friction="0.02" />
   </joint>
   <link name="RL_wheel_Link">
@@ -456,7 +456,7 @@
     <parent link="RR_thigh_Link" />
     <child link="RR_calf_Link" />
     <axis xyz="0 1 0" />
-    <limit lower="0.9" upper="2.7" effort="20" velocity="20" />
+    <limit lower="1.21" upper="2.7" effort="20" velocity="20" />
     <dynamics damping="0.1" friction="0.02" />
   </joint>
   <link name="RR_wheel_Link">
